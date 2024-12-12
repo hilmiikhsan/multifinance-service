@@ -41,6 +41,10 @@ func (a *Adapter) Sync(opts ...Option) error {
 		errs = append(errs, "Multifinance Mysql not initialized")
 	}
 
+	if a.MultifinanceRedis == nil {
+		errs = append(errs, "Multifinance Redis not initialized")
+	}
+
 	if a.RestServer == nil {
 		errs = append(errs, "No server initialized")
 	}
@@ -67,6 +71,13 @@ func (a *Adapter) Unsync() error {
 			errs = append(errs, err.Error())
 		}
 		log.Info().Msg("Multifinance Mysql disconnected")
+	}
+
+	if a.MultifinanceRedis != nil {
+		if err := a.MultifinanceRedis.Close(); err != nil {
+			errs = append(errs, err.Error())
+		}
+		log.Info().Msg("Multifinance Redis disconnected")
 	}
 
 	if len(errs) > 0 {

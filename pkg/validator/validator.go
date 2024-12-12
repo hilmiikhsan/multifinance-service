@@ -3,7 +3,9 @@ package validator
 import (
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	// "github.com/go-playground/locales/en"
 	// ut "github.com/go-playground/universal-translator"
@@ -68,6 +70,21 @@ func NewValidator() *Validator {
 	}
 	if err := v.RegisterValidation("otp_number", otpNumberValidation); err != nil {
 		log.Fatal().Err(err).Msg("Error while registering otp_number validator")
+	}
+	if err := v.RegisterValidation("nik", validateNIK); err != nil {
+		log.Fatal().Err(err).Msg("Error while registering nik validator")
+	}
+	if err := v.RegisterValidation("birth_date", validateBirthDate); err != nil {
+		log.Fatal().Err(err).Msg("Error while registering birth_date validator")
+	}
+	if err := v.RegisterValidation("salary", validateSalary); err != nil {
+		log.Fatal().Err(err).Msg("Error while registering salary validator")
+	}
+	if err := v.RegisterValidation("file_path", validateFilePath); err != nil {
+		log.Fatal().Err(err).Msg("Error while registering file_path validator")
+	}
+	if err := v.RegisterValidation("valid_text", validateLongText); err != nil {
+		log.Fatal().Err(err).Msg("Error while registering valid_text validator")
 	}
 
 	validatorCustom.validator = v
@@ -158,4 +175,75 @@ func otpNumberValidation(fl validator.FieldLevel) bool {
 	// Check if the OTP matches exactly 6-digit numeric pattern
 	matched, _ := regexp.MatchString(`^\d{6}$`, otp)
 	return matched
+}
+
+func validateNIK(fl validator.FieldLevel) bool {
+	// Regular expression to ensure NIK is exactly 16 numeric digits
+	numericRegex := regexp.MustCompile(`^\d{16}$`)
+
+	// Get the field value as a string
+	nik := fl.Field().String()
+
+	// Validate against the regex
+	return numericRegex.MatchString(nik)
+}
+
+func validateBirthDate(fl validator.FieldLevel) bool {
+	// Regular expression to match the date format YYYY-MM-DD
+	dateRegex := regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
+
+	// Get the field value as a string
+	birthDate := fl.Field().String()
+
+	// Check if the format matches
+	if !dateRegex.MatchString(birthDate) {
+		return false
+	}
+
+	// Parse the date to ensure it's valid
+	_, err := time.Parse("2006-01-02", birthDate)
+	return err == nil
+}
+
+func validateSalary(fl validator.FieldLevel) bool {
+	// Regular expression to match a valid numeric value (integer or decimal)
+	numericRegex := regexp.MustCompile(`^\d+(\.\d{1,2})?$`)
+
+	// Get the field value as a string
+	salary := fl.Field().String()
+
+	// Check if the format matches
+	if !numericRegex.MatchString(salary) {
+		return false
+	}
+
+	// Convert the string to a float to check the value
+	value, err := strconv.ParseFloat(salary, 64)
+	if err != nil || value < 0 {
+		return false
+	}
+
+	return true
+}
+
+func validateFilePath(fl validator.FieldLevel) bool {
+	// Regular expression to validate a valid file path
+	filePathRegex := regexp.MustCompile(`^[a-zA-Z0-9_\-/]+(\.[a-zA-Z0-9]{2,5})$`)
+
+	// Get the field value as a string
+	filePath := fl.Field().String()
+
+	// Return true if the field matches the regex
+	return filePathRegex.MatchString(filePath)
+}
+
+func validateLongText(fl validator.FieldLevel) bool {
+	// Regex pattern to detect SQL Injection or JavaScript Injection attempts
+	sqlInjectionPattern := regexp.MustCompile(`(?i)(select|insert|delete|drop|update|--|;|union|alert|<script|onerror)`)
+
+	// Get the field value as a string
+	text := fl.Field().String()
+
+	// Return true if there's no match (valid), false if there's a match (invalid)
+	return !sqlInjectionPattern.MatchString(text)
 }

@@ -181,6 +181,21 @@ func errorValidationHandler[T any](err error, payload *T) (int, map[string][]str
 		case "otp_number":
 			message = fmt.Sprintf("%s is not a valid OTP number.", fieldInMsg)
 			// message = fmt.Sprintf("%s bukan nomor OTP yang valid.", fieldInMsg)
+		case "nik":
+			message = fmt.Sprintf("%s is not a valid NIK.", fieldInMsg)
+			// message = fmt.Sprintf("%s bukan NIK yang valid.", fieldInMsg)
+		case "birth_date":
+			message = fmt.Sprintf("%s is not a valid birth date.", fieldInMsg)
+			// message = fmt.Sprintf("%s bukan tanggal lahir yang valid.", fieldInMsg)
+		case "salary":
+			message = fmt.Sprintf("%s is not a valid salary.", fieldInMsg)
+			// message = fmt.Sprintf("%s bukan gaji yang valid.", fieldInMsg)
+		case "file_path":
+			message = fmt.Sprintf("%s is not a valid file path.", fieldInMsg)
+			// message = fmt.Sprintf("%s bukan path file yang valid.", fieldInMsg)
+		case "valid_text":
+			message = fmt.Sprintf("%s is not a valid text.", fieldInMsg)
+			// message = fmt.Sprintf("%s terlalu panjang.", fieldInMsg)
 		}
 
 		errorMessages[field] = append(errorMessages[field], message)

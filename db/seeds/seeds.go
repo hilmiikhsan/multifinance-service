@@ -81,8 +81,6 @@ func (s *Seed) customersSeed(total int) {
 		ktpPhotoPath := fmt.Sprintf("/path/to/ktp/user%d.jpg", i+1)
 		selfiePhotoPath := fmt.Sprintf("/path/to/selfie/user%d.jpg", i+1)
 
-		fmt.Println(nik, email, password, fullName, legalName, birthPlace, birthDate, salary, ktpPhotoPath, selfiePhotoPath)
-
 		_, err := s.db.Exec(query, nik, email, password, fullName, legalName, birthPlace, birthDate, salary, ktpPhotoPath, selfiePhotoPath)
 		if err != nil {
 			log.Error().Err(err).Msg("Error seeding customers table")

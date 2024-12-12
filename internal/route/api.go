@@ -4,15 +4,16 @@ import (
 	"github.com/hilmiikhsan/multifinance-service/pkg/response"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/hilmiikhsan/multifinance-service/internal/module/auth/handler/rest"
 	"github.com/rs/zerolog/log"
 )
 
 func SetupRoutes(app *fiber.App) {
-	// var (
-	// 	api = app.Group("/api/v1")
-	// )
+	var (
+		api = app.Group("/api/v1")
+	)
 
-	// restUser.NewUserHandler().Register(api)
+	rest.NewAuthHandler().AuthRoute(api)
 
 	// fallback route
 	app.Use(func(c *fiber.Ctx) error {
