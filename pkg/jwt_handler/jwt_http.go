@@ -46,10 +46,10 @@ func (j *jwtHandler) GenerateTokenString(ctx context.Context, payload CostumClai
 	expireTime := time.Now().Add(MapTypeToken[payload.TokenType])
 
 	claims := CustomClaims{
-		UserId:   payload.UserId,
-		Nik:      payload.Nik,
-		Email:    payload.Email,
-		FullName: payload.FullName,
+		CustomerID: payload.CustomerID,
+		Nik:        payload.Nik,
+		Email:      payload.Email,
+		FullName:   payload.FullName,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   "user",
 			Issuer:    config.Envs.App.Name,
@@ -70,7 +70,7 @@ func (j *jwtHandler) GenerateTokenString(ctx context.Context, payload CostumClai
 
 	key := fmt.Sprintf("%s:%s", payload.Nik, payload.TokenType)
 
-	err = j.db.Set(ctx, key, claims.UserId, expirationDuration)
+	err = j.db.Set(ctx, key, claims.Email, expirationDuration)
 	if err != nil {
 		log.Error().Err(err).Msg("jwthandler::GenerateTokenString - Error while saving token to Redis")
 		return "", err_msg.NewCustomErrors(fiber.StatusInternalServerError, err_msg.WithMessage(constants.ErrInternalServerError))

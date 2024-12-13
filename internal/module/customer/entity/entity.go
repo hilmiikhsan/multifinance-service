@@ -14,6 +14,8 @@ type Customer struct {
 	Salary          float64   `db:"salary"`
 	KtpPhotoPath    string    `db:"ktp_photo_path"`
 	SelfiePhotoPath string    `db:"selfie_photo_path"`
+	TenorMonth      int       `db:"tenor_month"`
+	LimitAmount     float64   `db:"limit_amount"`
 	CreatedAt       time.Time `db:"created_at"`
 	UpdatedAt       time.Time `db:"updated_at"`
 }

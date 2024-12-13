@@ -107,11 +107,11 @@ func (s *authService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 	}
 
 	token, err := s.jwt.GenerateTokenString(ctx, jwt_handler.CostumClaimsPayload{
-		UserId:    customerData.ID,
-		Nik:       customerData.Nik,
-		Email:     customerData.Email,
-		FullName:  customerData.FullName,
-		TokenType: constants.AccessTokenType,
+		CustomerID: customerData.ID,
+		Nik:        customerData.Nik,
+		Email:      customerData.Email,
+		FullName:   customerData.FullName,
+		TokenType:  constants.AccessTokenType,
 	})
 	if err != nil {
 		log.Error().Err(err).Any("payload", req).Msg("service::Login - Failed to generate token string")
@@ -119,11 +119,11 @@ func (s *authService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 	}
 
 	refreshToken, err := s.jwt.GenerateTokenString(ctx, jwt_handler.CostumClaimsPayload{
-		UserId:    customerData.ID,
-		Nik:       customerData.Nik,
-		Email:     customerData.Email,
-		FullName:  customerData.FullName,
-		TokenType: constants.RefreshTokenType,
+		CustomerID: customerData.ID,
+		Nik:        customerData.Nik,
+		Email:      customerData.Email,
+		FullName:   customerData.FullName,
+		TokenType:  constants.RefreshTokenType,
 	})
 	if err != nil {
 		log.Error().Err(err).Any("payload", req).Msg("service::Login - Failed to generate token string")
@@ -153,11 +153,11 @@ func (s *authService) RefreshToken(ctx context.Context, accessToken string) (*dt
 	id, _ := strconv.Atoi(claims.ID)
 
 	token, err := s.jwt.GenerateTokenString(ctx, jwt_handler.CostumClaimsPayload{
-		UserId:    id,
-		Nik:       claims.Nik,
-		Email:     claims.Email,
-		FullName:  claims.FullName,
-		TokenType: constants.AccessTokenType,
+		CustomerID: id,
+		Nik:        claims.Nik,
+		Email:      claims.Email,
+		FullName:   claims.FullName,
+		TokenType:  constants.AccessTokenType,
 	})
 	if err != nil {
 		log.Error().Err(err).Any("payload", claims).Msg("service::RefreshToken - Failed to generate token string")

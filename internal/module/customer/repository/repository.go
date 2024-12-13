@@ -77,7 +77,7 @@ func (r *customerRepository) InsertNewUser(ctx context.Context, data *entity.Cus
 	return res, nil
 }
 
-func (r customerRepository) FindCustomerByEmail(ctx context.Context, email string) (*entity.Customer, error) {
+func (r *customerRepository) FindCustomerByEmail(ctx context.Context, email string) (*entity.Customer, error) {
 	var res = new(entity.Customer)
 
 	err := r.db.GetContext(ctx, res, r.db.Rebind(queryFindCustomerByEmail), email)
@@ -88,6 +88,23 @@ func (r customerRepository) FindCustomerByEmail(ctx context.Context, email strin
 		}
 
 		log.Error().Err(err).Any("email", email).Msg("repository::FindCustomerByEmail - Failed to find user by email")
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (r *customerRepository) FindCustomerByID(ctx context.Context, id int) (*entity.Customer, error) {
+	var res = new(entity.Customer)
+
+	err := r.db.GetContext(ctx, res, r.db.Rebind(queryFindCustomerByID), id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			log.Error().Err(err).Int("id", id).Msg("repository::FindCustomerByID - ID not found")
+			return nil, err_msg.NewCustomErrors(fiber.StatusNotFound, err_msg.WithMessage(constants.ErrUserNotFound))
+		}
+
+		log.Error().Err(err).Int("id", id).Msg("repository::FindCustomerByID - Failed to find user by ID")
 		return nil, err
 	}
 

@@ -6,17 +6,17 @@ import (
 )
 
 type Locals struct {
-	UserId   string
-	Nik      string
-	Email    string
-	FullName string
+	CustomerID int
+	Nik        string
+	Email      string
+	FullName   string
 }
 
 func GetLocals(c *fiber.Ctx) *Locals {
 	var l = Locals{}
-	userId, ok := c.Locals("user_id").(string)
+	CustomerID, ok := c.Locals("customer_id").(int)
 	if ok {
-		l.UserId = userId
+		l.CustomerID = CustomerID
 	} else {
 		log.Warn().Msg("middleware::Locals-GetLocals failed to get user_id from locals")
 	}
@@ -30,7 +30,7 @@ func GetLocals(c *fiber.Ctx) *Locals {
 
 	email, ok := c.Locals("email").(string)
 	if ok {
-		l.UserId = email
+		l.Email = email
 	} else {
 		log.Warn().Msg("middleware::Locals-GetLocals failed to get email from locals")
 	}
@@ -45,8 +45,8 @@ func GetLocals(c *fiber.Ctx) *Locals {
 	return &l
 }
 
-func (l *Locals) GetUserId() string {
-	return l.UserId
+func (l *Locals) GetCustomerID() int {
+	return l.CustomerID
 }
 
 func (l *Locals) GetNik() string {

@@ -31,7 +31,7 @@ func (m *AuthMiddleware) AuthBearer(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(unauthorizedResponse)
 	}
 
-	c.Locals("user_id", claims.UserId)
+	c.Locals("customer_id", claims.CustomerID)
 	c.Locals("nik", claims.Nik)
 	c.Locals("email", claims.Email)
 	c.Locals("full_name", claims.FullName)

@@ -4,16 +4,19 @@ import (
 	"github.com/hilmiikhsan/multifinance-service/pkg/response"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/hilmiikhsan/multifinance-service/internal/module/auth/handler/rest"
+	authRest "github.com/hilmiikhsan/multifinance-service/internal/module/auth/handler/rest"
+	customerRest "github.com/hilmiikhsan/multifinance-service/internal/module/customer/handler/rest"
 	"github.com/rs/zerolog/log"
 )
 
 func SetupRoutes(app *fiber.App) {
 	var (
-		api = app.Group("/api/v1")
+		authAPIV1     = app.Group("/api/v1/auth")
+		customerAPIV1 = app.Group("/api/v1/customer")
 	)
 
-	rest.NewAuthHandler().AuthRoute(api)
+	authRest.NewAuthHandler().AuthRoute(authAPIV1)
+	customerRest.NewCustomerHandler().CustomerRoute(customerAPIV1)
 
 	// fallback route
 	app.Use(func(c *fiber.Ctx) error {
