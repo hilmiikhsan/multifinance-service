@@ -7,6 +7,7 @@ import (
 	authRest "github.com/hilmiikhsan/multifinance-service/internal/module/auth/handler/rest"
 	creditLimitRest "github.com/hilmiikhsan/multifinance-service/internal/module/credit_limit/handler/rest"
 	customerRest "github.com/hilmiikhsan/multifinance-service/internal/module/customer/handler/rest"
+	transactionRest "github.com/hilmiikhsan/multifinance-service/internal/module/transaction/handler/rest"
 	"github.com/rs/zerolog/log"
 )
 
@@ -15,11 +16,13 @@ func SetupRoutes(app *fiber.App) {
 		authAPIV1        = app.Group("/api/v1/auth")
 		customerAPIV1    = app.Group("/api/v1/customer")
 		creditLimitAPIV1 = app.Group("/api/v1/credit")
+		transactionAPIV1 = app.Group("/api/v1/transaction")
 	)
 
 	authRest.NewAuthHandler().AuthRoute(authAPIV1)
 	customerRest.NewCustomerHandler().CustomerRoute(customerAPIV1)
 	creditLimitRest.NewCreditLimitHandler().CreditLimitRoute(creditLimitAPIV1)
+	transactionRest.NewTransactionHandler().TransactionRoute(transactionAPIV1)
 
 	// fallback route
 	app.Use(func(c *fiber.Ctx) error {

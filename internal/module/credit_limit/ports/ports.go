@@ -11,6 +11,7 @@ import (
 type CreditLimitRepository interface {
 	InsertNewCreditLimit(ctx context.Context, tx *sql.Tx, data *entity.CreditLimit) error
 	FindCreditLimitByCustomerID(ctx context.Context, customerID int) (*[]entity.Limits, error)
+	FindLimitByCustomerAndTenor(ctx context.Context, tx *sql.Tx, customerID, tenorMonth int) (*entity.Limits, error)
 }
 
 type CreditLimitService interface {

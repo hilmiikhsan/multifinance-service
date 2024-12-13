@@ -12,4 +12,13 @@ const (
 		FROM credit_limits
 		WHERE customer_id = ?
 	`
+
+	queryLockCreditLimitByCustomerAndTenor = `
+		SELECT
+			tenor_month,
+			limit_amount
+		FROM credit_limits
+		WHERE customer_id = ? AND tenor_month = ?
+		FOR UPDATE
+	`
 )

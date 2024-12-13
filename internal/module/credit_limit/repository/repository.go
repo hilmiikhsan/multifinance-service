@@ -50,3 +50,27 @@ func (r *creditLimitRepository) FindCreditLimitByCustomerID(ctx context.Context,
 
 	return &limits, nil
 }
+
+func (r *creditLimitRepository) FindLimitByCustomerAndTenor(ctx context.Context, tx *sql.Tx, customerID int, tenorMonth int) (*entity.Limits, error) {
+	var limit entity.Limits
+
+	err := tx.QueryRowContext(ctx, queryLockCreditLimitByCustomerAndTenor, customerID, tenorMonth).Scan(&limit.TenorMonth, &limit.LimitAmount)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			log.Error().
+				Err(err).
+				Int("customer_id", customerID).
+				Int("tenor_month", tenorMonth).
+				Msg("repository::FindLimitByCustomerAndTenor - No credit limit found")
+			return nil, err_msg.NewCustomErrors(fiber.StatusBadRequest, err_msg.WithMessage("Invalid tenor or customer ID"))
+		}
+		log.Error().
+			Err(err).
+			Int("customer_id", customerID).
+			Int("tenor_month", tenorMonth).
+			Msg("repository::FindLimitByCustomerAndTenor - Failed to fetch credit limit")
+		return nil, err
+	}
+
+	return &limit, nil
+}

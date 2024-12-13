@@ -187,8 +187,8 @@ func errorValidationHandler[T any](err error, payload *T) (int, map[string][]str
 		case "birth_date":
 			message = fmt.Sprintf("%s is not a valid birth date.", fieldInMsg)
 			// message = fmt.Sprintf("%s bukan tanggal lahir yang valid.", fieldInMsg)
-		case "salary":
-			message = fmt.Sprintf("%s is not a valid salary.", fieldInMsg)
+		case "amount_number":
+			message = fmt.Sprintf("%s is not a valid value.", fieldInMsg)
 			// message = fmt.Sprintf("%s bukan gaji yang valid.", fieldInMsg)
 		case "file_path":
 			message = fmt.Sprintf("%s is not a valid file path.", fieldInMsg)

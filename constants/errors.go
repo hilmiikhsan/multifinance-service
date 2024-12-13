@@ -12,4 +12,6 @@ var (
 	ErrInvalidAccessToken         = "Invalid access token"
 	ErrUserNotFound               = "User not found"
 	ErrSalaryIsNotValid           = "Salary is not a valid salary"
+	ErrOnTheRoadPriceExceedLimit  = "On the road price exceeds credit limit"
+	ErrInvalidOrCreditLimit       = "Invalid tenor or credit limit"
 )

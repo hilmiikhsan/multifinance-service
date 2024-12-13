@@ -76,7 +76,7 @@ func NewValidator() *Validator {
 	if err := v.RegisterValidation("birth_date", validateBirthDate); err != nil {
 		log.Fatal().Err(err).Msg("Error while registering birth_date validator")
 	}
-	if err := v.RegisterValidation("salary", validateSalary); err != nil {
+	if err := v.RegisterValidation("amount_number", validateAmountNumber); err != nil {
 		log.Fatal().Err(err).Msg("Error while registering salary validator")
 	}
 	if err := v.RegisterValidation("file_path", validateFilePath); err != nil {
@@ -204,7 +204,7 @@ func validateBirthDate(fl validator.FieldLevel) bool {
 	return err == nil
 }
 
-func validateSalary(fl validator.FieldLevel) bool {
+func validateAmountNumber(fl validator.FieldLevel) bool {
 	// Check if the field type is integer
 	if fl.Field().Kind() != reflect.Int {
 		return false
