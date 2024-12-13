@@ -2,6 +2,7 @@ package rest
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/hilmiikhsan/multifinance-service/constants"
 	"github.com/hilmiikhsan/multifinance-service/internal/adapter"
 	redisRepository "github.com/hilmiikhsan/multifinance-service/internal/infrastructure/redis"
 	"github.com/hilmiikhsan/multifinance-service/internal/module/auth/dto"
@@ -47,6 +48,7 @@ func NewAuthHandler() *authHandler {
 func (h *authHandler) AuthRoute(router fiber.Router) {
 	router.Post("/register", h.register)
 	router.Post("/login", h.login)
+	router.Post("/refresh-token", h.refreshToken)
 }
 
 func (h *authHandler) register(c *fiber.Ctx) error {
@@ -98,6 +100,31 @@ func (h *authHandler) login(c *fiber.Ctx) error {
 	res, err := h.service.Login(ctx, req)
 	if err != nil {
 		log.Error().Err(err).Any("payload", req).Msg("handler::login - Failed to login user")
+		code, errs := err_msg.Errors[error](err)
+		return c.Status(code).JSON(response.Error(errs))
+	}
+
+	return c.Status(fiber.StatusOK).JSON(response.Success(res, ""))
+}
+
+func (h *authHandler) refreshToken(c *fiber.Ctx) error {
+	var (
+		ctx         = c.Context()
+		accessToken = c.Get(constants.HeaderAuthorization)
+	)
+
+	if accessToken == "" {
+		log.Warn().Msg("handler::refreshToken - Access token is required")
+		return c.Status(fiber.StatusUnauthorized).JSON(response.Error(constants.ErrAccessTokenIsRequired))
+	}
+
+	if len(accessToken) > 7 {
+		accessToken = accessToken[7:]
+	}
+
+	res, err := h.service.RefreshToken(ctx, accessToken)
+	if err != nil {
+		log.Error().Err(err).Any("access_token", accessToken).Msg("handler::refreshToken - Failed to refresh token")
 		code, errs := err_msg.Errors[error](err)
 		return c.Status(code).JSON(response.Error(errs))
 	}

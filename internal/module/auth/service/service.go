@@ -121,7 +121,7 @@ func (s *authService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 		Nik:       customerData.Nik,
 		Email:     customerData.Email,
 		FullName:  customerData.FullName,
-		TokenType: constants.AccessTokenType,
+		TokenType: constants.RefreshTokenType,
 	})
 	if err != nil {
 		log.Error().Err(err).Any("payload", req).Msg("service::Login - Failed to generate token string")
@@ -133,6 +133,36 @@ func (s *authService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 	res.FullName = customerData.FullName
 	res.Token = token
 	res.RefreshToken = refreshToken
+
+	return res, nil
+}
+
+func (s *authService) RefreshToken(ctx context.Context, accessToken string) (*dto.RefreshTokenResponse, error) {
+	var (
+		res = new(dto.RefreshTokenResponse)
+	)
+
+	claims, err := s.jwt.ParseTokenString(ctx, accessToken)
+	if err != nil {
+		log.Error().Err(err).Any("access_token", accessToken).Msg("service::RefreshToken - Failed to parse access token")
+		return nil, err_msg.NewCustomErrors(fiber.StatusUnauthorized, err_msg.WithMessage(constants.ErrInvalidAccessToken))
+	}
+
+	id, _ := strconv.Atoi(claims.ID)
+
+	token, err := s.jwt.GenerateTokenString(ctx, jwt_handler.CostumClaimsPayload{
+		UserId:    id,
+		Nik:       claims.Nik,
+		Email:     claims.Email,
+		FullName:  claims.FullName,
+		TokenType: constants.AccessTokenType,
+	})
+	if err != nil {
+		log.Error().Err(err).Any("payload", claims).Msg("service::RefreshToken - Failed to generate token string")
+		return nil, err_msg.NewCustomErrors(fiber.StatusInternalServerError, err_msg.WithMessage(constants.ErrInternalServerError))
+	}
+
+	res.Token = token
 
 	return res, nil
 }

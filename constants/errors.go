@@ -8,4 +8,6 @@ var (
 	ErrUserAlreadyVerified        = "User already verified"
 	ErrTokenAlreadyExpired        = "Token already expired"
 	ErrEmailOrPasswordIsIncorrect = "Email or password is incorrect"
+	ErrAccessTokenIsRequired      = "Access token is required"
+	ErrInvalidAccessToken         = "Invalid access token"
 )

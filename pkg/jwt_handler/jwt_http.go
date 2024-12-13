@@ -78,16 +78,8 @@ func (j *jwtHandler) GenerateTokenString(ctx context.Context, payload CostumClai
 	return tokenString, nil
 }
 
-func (j *jwtHandler) ParseTokenString(ctx context.Context, tokenString, username, tokenType string) (*CustomClaims, error) {
+func (j *jwtHandler) ParseTokenString(ctx context.Context, tokenString string) (*CustomClaims, error) {
 	claims := &CustomClaims{}
-
-	key := fmt.Sprintf("%s:%s", username, tokenType)
-
-	_, err := j.db.Get(ctx, key)
-	if err != nil {
-		log.Error().Err(err).Msg("jwthandler::ParseTokenString - Token not found in Redis")
-		return nil, err_msg.NewCustomErrors(fiber.StatusUnauthorized, err_msg.WithMessage(constants.ErrTokenAlreadyExpired))
-	}
 
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(config.Envs.Guard.JwtPrivateKey), nil

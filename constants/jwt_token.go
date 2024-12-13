@@ -1,6 +1,7 @@
 package constants
 
 const (
-	AccessTokenType  = "token"
-	RefreshTokenType = "refresh_token"
+	AccessTokenType     = "token"
+	RefreshTokenType    = "refresh_token"
+	HeaderAuthorization = "Authorization"
 )
