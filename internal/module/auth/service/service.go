@@ -14,6 +14,7 @@ import (
 	"github.com/hilmiikhsan/multifinance-service/internal/module/customer/entity"
 	customerPorts "github.com/hilmiikhsan/multifinance-service/internal/module/customer/ports"
 	"github.com/hilmiikhsan/multifinance-service/pkg/err_msg"
+	"github.com/hilmiikhsan/multifinance-service/pkg/jwt_handler"
 	"github.com/hilmiikhsan/multifinance-service/pkg/utils"
 	"github.com/jmoiron/sqlx"
 	"github.com/rs/zerolog/log"
@@ -25,13 +26,15 @@ type authService struct {
 	db                 *sqlx.DB
 	customerRepository customerPorts.CustomerRepository
 	redisDB            redisPorts.RedisRepository
+	jwt                jwt_handler.JWT
 }
 
-func NewUserService(db *sqlx.DB, customerRepository customerPorts.CustomerRepository, redisDB redisPorts.RedisRepository) *authService {
+func NewUserService(db *sqlx.DB, customerRepository customerPorts.CustomerRepository, redisDB redisPorts.RedisRepository, jwt jwt_handler.JWT) *authService {
 	return &authService{
 		db:                 db,
 		customerRepository: customerRepository,
 		redisDB:            redisDB,
+		jwt:                jwt,
 	}
 }
 
@@ -78,4 +81,58 @@ func (s *authService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 		ID:    result.ID,
 		Email: result.Email,
 	}, nil
+}
+
+func (s *authService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error) {
+	var (
+		res = new(dto.LoginResponse)
+	)
+
+	customerData, err := s.customerRepository.FindCustomerByEmail(ctx, req.Email)
+	if err != nil {
+		log.Error().Err(err).Any("payload", req).Msg("service::Login - Failed to find user")
+		return nil, err_msg.NewCustomErrors(fiber.StatusInternalServerError, err_msg.WithMessage(constants.ErrInternalServerError))
+	}
+
+	if customerData == nil {
+		log.Error().Any("payload", req).Msg("service::Login - Email not found")
+		return nil, err_msg.NewCustomErrors(fiber.StatusUnprocessableEntity, err_msg.WithMessage(constants.ErrEmailOrPasswordIsIncorrect))
+	}
+
+	if !utils.ComparePassword(customerData.Password, req.Password) {
+		log.Error().Any("payload", req).Msg("service::Login - Password is incorrect")
+		return nil, err_msg.NewCustomErrors(fiber.StatusUnprocessableEntity, err_msg.WithMessage(constants.ErrEmailOrPasswordIsIncorrect))
+	}
+
+	token, err := s.jwt.GenerateTokenString(ctx, jwt_handler.CostumClaimsPayload{
+		UserId:    customerData.ID,
+		Nik:       customerData.Nik,
+		Email:     customerData.Email,
+		FullName:  customerData.FullName,
+		TokenType: constants.AccessTokenType,
+	})
+	if err != nil {
+		log.Error().Err(err).Any("payload", req).Msg("service::Login - Failed to generate token string")
+		return nil, err_msg.NewCustomErrors(fiber.StatusInternalServerError, err_msg.WithMessage(constants.ErrInternalServerError))
+	}
+
+	refreshToken, err := s.jwt.GenerateTokenString(ctx, jwt_handler.CostumClaimsPayload{
+		UserId:    customerData.ID,
+		Nik:       customerData.Nik,
+		Email:     customerData.Email,
+		FullName:  customerData.FullName,
+		TokenType: constants.AccessTokenType,
+	})
+	if err != nil {
+		log.Error().Err(err).Any("payload", req).Msg("service::Login - Failed to generate token string")
+		return nil, err_msg.NewCustomErrors(fiber.StatusInternalServerError, err_msg.WithMessage(constants.ErrInternalServerError))
+	}
+
+	res.ID = customerData.ID
+	res.Email = customerData.Email
+	res.FullName = customerData.FullName
+	res.Token = token
+	res.RefreshToken = refreshToken
+
+	return res, nil
 }

@@ -17,3 +17,16 @@ type RegisterResponse struct {
 	ID    int    `json:"id"`
 	Email string `json:"email"`
 }
+
+type LoginRequest struct {
+	Email    string `json:"email" validate:"required,email,email_blacklist"`
+	Password string `json:"password" validate:"required"`
+}
+
+type LoginResponse struct {
+	ID           int    `json:"id"`
+	Email        string `json:"email"`
+	FullName     string `json:"full_name"`
+	Token        string `json:"token"`
+	RefreshToken string `json:"refresh_token"`
+}
