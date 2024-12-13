@@ -42,3 +42,22 @@ func (r *transactionRepository) InsertNewTransaction(ctx context.Context, tx *sq
 
 	return nil
 }
+
+func (r *transactionRepository) FindTransactionByIdAndCustomerID(ctx context.Context, id, customerID int) (*entity.Transaction, error) {
+	var (
+		res = new(entity.Transaction)
+	)
+
+	err := r.db.GetContext(ctx, res, r.db.Rebind(queryFindTransactionByIdAndCustomerID), id, customerID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			log.Error().Err(err).Msg("repository::FindTransactionByIdAndCustomerID - Transaction not found")
+			return nil, err_msg.NewCustomErrors(fiber.StatusNotFound, err_msg.WithMessage(constants.ErrTransactionNotFound))
+		}
+
+		log.Error().Err(err).Msg("repository::FindTransactionByIdAndCustomerID - Failed to find transaction by ID and customer ID")
+		return nil, err_msg.NewCustomErrors(fiber.StatusInternalServerError, err_msg.WithMessage(constants.ErrInternalServerError))
+	}
+
+	return res, nil
+}

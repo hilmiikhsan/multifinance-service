@@ -1,7 +1,10 @@
 package rest
 
 import (
+	"strconv"
+
 	"github.com/gofiber/fiber/v2"
+	"github.com/hilmiikhsan/multifinance-service/constants"
 	"github.com/hilmiikhsan/multifinance-service/internal/adapter"
 	redisRepository "github.com/hilmiikhsan/multifinance-service/internal/infrastructure/redis"
 	"github.com/hilmiikhsan/multifinance-service/internal/middleware"
@@ -53,6 +56,7 @@ func NewTransactionHandler() *transactionHandler {
 
 func (h *transactionHandler) TransactionRoute(router fiber.Router) {
 	router.Post("/create", h.middleware.AuthBearer, h.createTranscation)
+	router.Get("/:id", h.middleware.AuthBearer, h.getDetailTransaction)
 }
 
 func (h *transactionHandler) createTranscation(c *fiber.Ctx) error {
@@ -83,4 +87,35 @@ func (h *transactionHandler) createTranscation(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(response.Success(nil, ""))
+}
+
+func (h *transactionHandler) getDetailTransaction(c *fiber.Ctx) error {
+	var (
+		ctx    = c.Context()
+		locals = middleware.GetLocals(c)
+	)
+
+	idStr := c.Params("id")
+
+	if idStr == "0" {
+		log.Warn().Msg("handler::getDetailTransaction - ID is required")
+		return c.Status(fiber.StatusBadRequest).JSON(response.Error(constants.ErrParamIdIsRequired))
+	}
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		log.Error().Err(err).Msg("handler::getDetailTransaction - Failed to parse id")
+		return c.Status(fiber.StatusBadRequest).JSON(response.Error(constants.ErrParamIdIsRequired))
+	}
+
+	customerID := locals.GetCustomerID()
+
+	res, err := h.service.GetDetailTransaction(ctx, id, customerID)
+	if err != nil {
+		log.Error().Err(err).Int("customer_id", customerID).Msg("handler::getDetailTransaction - Failed to get detail transaction")
+		code, errs := err_msg.Errors[error](err)
+		return c.Status(code).JSON(response.Error(errs))
+	}
+
+	return c.Status(fiber.StatusOK).JSON(response.Success(res, ""))
 }

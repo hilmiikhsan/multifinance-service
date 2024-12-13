@@ -14,4 +14,6 @@ var (
 	ErrSalaryIsNotValid           = "Salary is not a valid salary"
 	ErrOnTheRoadPriceExceedLimit  = "On the road price exceeds credit limit"
 	ErrInvalidOrCreditLimit       = "Invalid tenor or credit limit"
+	ErrTransactionNotFound        = "Transaction not found"
+	ErrParamIdIsRequired          = "Param id is required"
 )

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/hilmiikhsan/multifinance-service/constants"
@@ -98,4 +99,29 @@ func (s *transactionService) CreateTransaction(ctx context.Context, req *dto.Cre
 
 	log.Info().Str("contract_number", contractNumber).Msg("service::CreateTransaction - Transaction created successfully")
 	return nil
+}
+
+func (s *transactionService) GetDetailTransaction(ctx context.Context, id, customerID int) (*dto.GetDetailTransactionResponse, error) {
+	transaction, err := s.transactionRepository.FindTransactionByIdAndCustomerID(ctx, id, customerID)
+	if err != nil {
+		if strings.Contains(err.Error(), constants.ErrTransactionNotFound) {
+			log.Error().Err(err).Int("id", id).Int("customer_id", customerID).Msg("service::GetDetailTransaction - Transaction not found")
+			return nil, err_msg.NewCustomErrors(fiber.StatusNotFound, err_msg.WithMessage(constants.ErrTransactionNotFound))
+		}
+
+		log.Error().Err(err).Int("id", id).Int("customer_id", customerID).Msg("service::GetDetailTransaction - Failed to find transaction by ID and customer ID")
+		return nil, err_msg.NewCustomErrors(fiber.StatusInternalServerError, err_msg.WithMessage(constants.ErrInternalServerError))
+	}
+
+	return &dto.GetDetailTransactionResponse{
+		ID:                transaction.ID,
+		CustomerID:        transaction.CustomerID,
+		ContractNumber:    transaction.ContractNumber,
+		OnTheRoadPrice:    transaction.OnTheRoadPrice,
+		AdminFee:          transaction.AdminFee,
+		InstallmentAmount: transaction.InstallmentAmount,
+		InterestAmount:    transaction.InterestAmount,
+		AssetName:         transaction.AssetName,
+		CreatedAt:         transaction.CreatedAt.Format(constants.DateTimeFormat),
+	}, nil
 }
