@@ -38,3 +38,15 @@ func (r *creditLimitRepository) InsertNewCreditLimit(ctx context.Context, tx *sq
 
 	return nil
 }
+
+func (r *creditLimitRepository) FindCreditLimitByCustomerID(ctx context.Context, customerID int) (*[]entity.Limits, error) {
+	var limits []entity.Limits
+
+	err := r.db.SelectContext(ctx, &limits, r.db.Rebind(queryFindCreditLimitByCustomerID), customerID)
+	if err != nil {
+		log.Error().Err(err).Int("customerID", customerID).Msg("repository::FindCreditLimitByCustomerID - Failed to find credit limit by customer ID")
+		return nil, err_msg.NewCustomErrors(fiber.StatusInternalServerError, err_msg.WithMessage(constants.ErrInternalServerError))
+	}
+
+	return &limits, nil
+}
