@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/hilmiikhsan/multifinance-service/constants"
 	redisPorts "github.com/hilmiikhsan/multifinance-service/internal/infrastructure/redis"
+	"github.com/hilmiikhsan/multifinance-service/internal/middleware"
 	"github.com/hilmiikhsan/multifinance-service/internal/module/auth/dto"
 	authPorts "github.com/hilmiikhsan/multifinance-service/internal/module/auth/ports"
 	"github.com/hilmiikhsan/multifinance-service/internal/module/customer/entity"
@@ -165,4 +167,30 @@ func (s *authService) RefreshToken(ctx context.Context, accessToken string) (*dt
 	res.Token = token
 
 	return res, nil
+}
+
+func (s *authService) Logout(ctx context.Context, accessToken string, locals *middleware.Locals) error {
+	key := fmt.Sprintf("%s:%s", locals.Nik, constants.AccessTokenType)
+
+	_, err := s.redisDB.Get(ctx, key)
+	if err != nil {
+		log.Error().Err(err).Msg("jwthandler::ParseTokenString - Token not found in Redis")
+		return err_msg.NewCustomErrors(fiber.StatusUnauthorized, err_msg.WithMessage(constants.ErrTokenAlreadyExpired))
+	}
+
+	claims, err := s.jwt.ParseTokenString(ctx, accessToken)
+	if err != nil {
+		log.Error().Err(err).Any("access_token", accessToken).Msg("service::Logout - Failed to parse access token")
+		return err_msg.NewCustomErrors(fiber.StatusUnauthorized, err_msg.WithMessage(constants.ErrInvalidAccessToken))
+	}
+
+	key = fmt.Sprintf("%s:%s", claims.Nik, constants.AccessTokenType)
+
+	err = s.redisDB.Del(ctx, key)
+	if err != nil {
+		log.Error().Err(err).Any("access_token", accessToken).Msg("service::Logout - Failed to set access token to redis")
+		return err_msg.NewCustomErrors(fiber.StatusInternalServerError, err_msg.WithMessage(constants.ErrInternalServerError))
+	}
+
+	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/hilmiikhsan/multifinance-service/constants"
 	"github.com/hilmiikhsan/multifinance-service/internal/adapter"
 	redisRepository "github.com/hilmiikhsan/multifinance-service/internal/infrastructure/redis"
+	"github.com/hilmiikhsan/multifinance-service/internal/middleware"
 	"github.com/hilmiikhsan/multifinance-service/internal/module/auth/dto"
 	"github.com/hilmiikhsan/multifinance-service/internal/module/auth/ports"
 	"github.com/hilmiikhsan/multifinance-service/internal/module/auth/service"
@@ -16,7 +17,8 @@ import (
 )
 
 type authHandler struct {
-	service ports.AuthService
+	service    ports.AuthService
+	middleware middleware.AuthMiddleware
 }
 
 func NewAuthHandler() *authHandler {
@@ -27,6 +29,9 @@ func NewAuthHandler() *authHandler {
 
 	// jwt
 	jwt := jwtHandler.NewJWT(redisRepository)
+
+	// middleware
+	middlewareHandler := middleware.NewAuthMiddleware(jwt)
 
 	// repository
 	customerRepository := customerRepository.NewCustomerRepository(adapter.Adapters.MultifinanceMysql)
@@ -41,6 +46,7 @@ func NewAuthHandler() *authHandler {
 
 	// handler
 	handler.service = authService
+	handler.middleware = *middlewareHandler
 
 	return handler
 }
@@ -49,6 +55,7 @@ func (h *authHandler) AuthRoute(router fiber.Router) {
 	router.Post("/register", h.register)
 	router.Post("/login", h.login)
 	router.Post("/refresh-token", h.refreshToken)
+	router.Post("/logout", h.middleware.AuthBearer, h.logout)
 }
 
 func (h *authHandler) register(c *fiber.Ctx) error {
@@ -130,4 +137,30 @@ func (h *authHandler) refreshToken(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(response.Success(res, ""))
+}
+
+func (h *authHandler) logout(c *fiber.Ctx) error {
+	var (
+		ctx         = c.Context()
+		accessToken = c.Get(constants.HeaderAuthorization)
+		locals      = middleware.GetLocals(c)
+	)
+
+	if accessToken == "" {
+		log.Warn().Msg("handler::logout - Access token is required")
+		return c.Status(fiber.StatusUnauthorized).JSON(response.Error(constants.ErrAccessTokenIsRequired))
+	}
+
+	if len(accessToken) > 7 {
+		accessToken = accessToken[7:]
+	}
+
+	err := h.service.Logout(ctx, accessToken, locals)
+	if err != nil {
+		log.Error().Err(err).Any("access_token", accessToken).Msg("handler::logout - Failed to logout user")
+		code, errs := err_msg.Errors[error](err)
+		return c.Status(code).JSON(response.Error(errs))
+	}
+
+	return c.Status(fiber.StatusOK).JSON(response.Success(nil, ""))
 }

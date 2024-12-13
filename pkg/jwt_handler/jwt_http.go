@@ -47,6 +47,7 @@ func (j *jwtHandler) GenerateTokenString(ctx context.Context, payload CostumClai
 
 	claims := CustomClaims{
 		UserId:   payload.UserId,
+		Nik:      payload.Nik,
 		Email:    payload.Email,
 		FullName: payload.FullName,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -86,7 +87,7 @@ func (j *jwtHandler) ParseTokenString(ctx context.Context, tokenString string) (
 	})
 	if err != nil {
 		log.Error().Err(err).Msg("jwthandler::ParseTokenString - Error while parsing token")
-		return nil, err_msg.NewCustomErrors(fiber.StatusInternalServerError, err_msg.WithMessage(constants.ErrInternalServerError))
+		return nil, err_msg.NewCustomErrors(fiber.StatusUnauthorized, err_msg.WithMessage(constants.ErrTokenAlreadyExpired))
 	}
 
 	if !token.Valid {
