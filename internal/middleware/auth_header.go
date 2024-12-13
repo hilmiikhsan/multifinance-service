@@ -9,7 +9,7 @@ import (
 func (m *AuthMiddleware) AuthBearer(c *fiber.Ctx) error {
 	accessToken := c.Get(constants.HeaderAuthorization)
 	unauthorizedResponse := fiber.Map{
-		"message": "Unauthorized",
+		"message": constants.ErrTokenAlreadyExpired,
 		"success": false,
 	}
 

@@ -11,4 +11,5 @@ var (
 	ErrAccessTokenIsRequired      = "Access token is required"
 	ErrInvalidAccessToken         = "Invalid access token"
 	ErrUserNotFound               = "User not found"
+	ErrSalaryIsNotValid           = "Salary is not a valid salary"
 )

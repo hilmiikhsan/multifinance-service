@@ -8,7 +8,7 @@ type RegisterRequest struct {
 	LegalName       string `json:"legal_name" validate:"required,max=100,valid_text"`
 	BirthPlace      string `json:"birth_place" validate:"required,max=100,valid_text"`
 	BirthDate       string `json:"birth_date" validate:"required,birth_date"`
-	Salary          string `json:"salary" validate:"required,salary"`
+	Salary          int    `json:"salary" validate:"required,numeric,salary"`
 	KtpPhotoPath    string `json:"ktp_photo_path" validate:"required,file_path"`
 	SelfiePhotoPath string `json:"selfie_photo_path" validate:"required,file_path"`
 }

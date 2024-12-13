@@ -3,7 +3,6 @@ package validator
 import (
 	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -206,24 +205,13 @@ func validateBirthDate(fl validator.FieldLevel) bool {
 }
 
 func validateSalary(fl validator.FieldLevel) bool {
-	// Regular expression to match a valid numeric value (integer or decimal)
-	numericRegex := regexp.MustCompile(`^\d+(\.\d{1,2})?$`)
-
-	// Get the field value as a string
-	salary := fl.Field().String()
-
-	// Check if the format matches
-	if !numericRegex.MatchString(salary) {
+	// Check if the field type is integer
+	if fl.Field().Kind() != reflect.Int {
 		return false
 	}
 
-	// Convert the string to a float to check the value
-	value, err := strconv.ParseFloat(salary, 64)
-	if err != nil || value < 0 {
-		return false
-	}
-
-	return true
+	// Return true if the salary is greater than 0
+	return fl.Field().Int() > 0
 }
 
 func validateFilePath(fl validator.FieldLevel) bool {

@@ -13,6 +13,8 @@ import (
 	"github.com/hilmiikhsan/multifinance-service/internal/middleware"
 	"github.com/hilmiikhsan/multifinance-service/internal/module/auth/dto"
 	authPorts "github.com/hilmiikhsan/multifinance-service/internal/module/auth/ports"
+	creditLimitEntity "github.com/hilmiikhsan/multifinance-service/internal/module/credit_limit/entity"
+	creditLimitPorts "github.com/hilmiikhsan/multifinance-service/internal/module/credit_limit/ports"
 	"github.com/hilmiikhsan/multifinance-service/internal/module/customer/entity"
 	customerPorts "github.com/hilmiikhsan/multifinance-service/internal/module/customer/ports"
 	"github.com/hilmiikhsan/multifinance-service/pkg/err_msg"
@@ -25,18 +27,20 @@ import (
 var _ authPorts.AuthService = &authService{}
 
 type authService struct {
-	db                 *sqlx.DB
-	customerRepository customerPorts.CustomerRepository
-	redisDB            redisPorts.RedisRepository
-	jwt                jwt_handler.JWT
+	db                    *sqlx.DB
+	customerRepository    customerPorts.CustomerRepository
+	redisDB               redisPorts.RedisRepository
+	jwt                   jwt_handler.JWT
+	creditLimitRepository creditLimitPorts.CreditLimitRepository
 }
 
-func NewUserService(db *sqlx.DB, customerRepository customerPorts.CustomerRepository, redisDB redisPorts.RedisRepository, jwt jwt_handler.JWT) *authService {
+func NewUserService(db *sqlx.DB, customerRepository customerPorts.CustomerRepository, redisDB redisPorts.RedisRepository, jwt jwt_handler.JWT, creditLimitRepository creditLimitPorts.CreditLimitRepository) *authService {
 	return &authService{
-		db:                 db,
-		customerRepository: customerRepository,
-		redisDB:            redisDB,
-		jwt:                jwt,
+		db:                    db,
+		customerRepository:    customerRepository,
+		redisDB:               redisDB,
+		jwt:                   jwt,
+		creditLimitRepository: creditLimitRepository,
 	}
 }
 
@@ -50,9 +54,21 @@ func (s *authService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 	req.Password = hashedPassword
 
 	birthDate, _ := time.Parse(constants.DateTimeFormat, req.BirthDate)
-	salary, _ := strconv.ParseFloat(req.Salary, 64)
 
-	result, err := s.customerRepository.InsertNewUser(ctx, &entity.Customer{
+	tx, err := s.db.Begin()
+	if err != nil {
+		log.Error().Err(err).Any("payload", req).Msg("service::Register - Failed to begin transaction")
+		return nil, err_msg.NewCustomErrors(fiber.StatusInternalServerError, err_msg.WithMessage(constants.ErrInternalServerError))
+	}
+	defer func() {
+		if err != nil {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Error().Err(rollbackErr).Any("payload", req).Msg("service::Register - Failed to rollback transaction")
+			}
+		}
+	}()
+
+	result, err := s.customerRepository.InsertNewUser(ctx, tx, &entity.Customer{
 		Nik:             req.Nik,
 		Email:           req.Email,
 		Password:        req.Password,
@@ -60,7 +76,7 @@ func (s *authService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 		LegalName:       req.LegalName,
 		BirthPlace:      req.BirthPlace,
 		BirthDate:       birthDate,
-		Salary:          salary,
+		Salary:          float64(req.Salary),
 		KtpPhotoPath:    req.KtpPhotoPath,
 		SelfiePhotoPath: req.SelfiePhotoPath,
 	})
@@ -76,6 +92,43 @@ func (s *authService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 		}
 
 		log.Error().Err(err).Any("payload", req).Msg("service::Register - Failed to insert new user")
+		return nil, err_msg.NewCustomErrors(fiber.StatusInternalServerError, err_msg.WithMessage(constants.ErrInternalServerError))
+	}
+
+	var defaultLimits []creditLimitEntity.CreditLimit
+	switch {
+	case req.Salary < 5000000:
+		defaultLimits = []creditLimitEntity.CreditLimit{
+			{CustomerID: result.ID, TenorMonth: 1, LimitAmount: 100000.00},
+			{CustomerID: result.ID, TenorMonth: 2, LimitAmount: 200000.00},
+			{CustomerID: result.ID, TenorMonth: 3, LimitAmount: 500000.00},
+			{CustomerID: result.ID, TenorMonth: 6, LimitAmount: 700000.00},
+		}
+	case req.Salary <= 10000000:
+		defaultLimits = []creditLimitEntity.CreditLimit{
+			{CustomerID: result.ID, TenorMonth: 1, LimitAmount: 200000.00},
+			{CustomerID: result.ID, TenorMonth: 2, LimitAmount: 400000.00},
+			{CustomerID: result.ID, TenorMonth: 3, LimitAmount: 800000.00},
+			{CustomerID: result.ID, TenorMonth: 6, LimitAmount: 1200000.00},
+		}
+	default: // Salary > 10 juta
+		defaultLimits = []creditLimitEntity.CreditLimit{
+			{CustomerID: result.ID, TenorMonth: 1, LimitAmount: 500000.00},
+			{CustomerID: result.ID, TenorMonth: 2, LimitAmount: 1000000.00},
+			{CustomerID: result.ID, TenorMonth: 3, LimitAmount: 1500000.00},
+			{CustomerID: result.ID, TenorMonth: 6, LimitAmount: 2000000.00},
+		}
+	}
+
+	for _, limit := range defaultLimits {
+		if err := s.creditLimitRepository.InsertNewCreditLimit(ctx, tx, &limit); err != nil {
+			log.Error().Err(err).Any("payload", limit).Msg("service::Register - Failed to insert new credit limit")
+			return nil, err_msg.NewCustomErrors(fiber.StatusInternalServerError, err_msg.WithMessage(constants.ErrInternalServerError))
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		log.Error().Err(err).Any("payload", req).Msg("service::Register - Failed to commit transaction")
 		return nil, err_msg.NewCustomErrors(fiber.StatusInternalServerError, err_msg.WithMessage(constants.ErrInternalServerError))
 	}
 

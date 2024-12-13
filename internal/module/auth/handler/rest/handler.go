@@ -9,6 +9,7 @@ import (
 	"github.com/hilmiikhsan/multifinance-service/internal/module/auth/dto"
 	"github.com/hilmiikhsan/multifinance-service/internal/module/auth/ports"
 	"github.com/hilmiikhsan/multifinance-service/internal/module/auth/service"
+	creditLimitRepository "github.com/hilmiikhsan/multifinance-service/internal/module/credit_limit/repository"
 	customerRepository "github.com/hilmiikhsan/multifinance-service/internal/module/customer/repository"
 	"github.com/hilmiikhsan/multifinance-service/pkg/err_msg"
 	jwtHandler "github.com/hilmiikhsan/multifinance-service/pkg/jwt_handler"
@@ -35,6 +36,7 @@ func NewAuthHandler() *authHandler {
 
 	// repository
 	customerRepository := customerRepository.NewCustomerRepository(adapter.Adapters.MultifinanceMysql)
+	creditLimitRepository := creditLimitRepository.NewCreditLimitRepository(adapter.Adapters.MultifinanceMysql)
 
 	// service
 	authService := service.NewUserService(
@@ -42,6 +44,7 @@ func NewAuthHandler() *authHandler {
 		customerRepository,
 		redisRepository,
 		jwt,
+		creditLimitRepository,
 	)
 
 	// handler

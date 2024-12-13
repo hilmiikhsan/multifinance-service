@@ -40,6 +40,14 @@ func (s *customerService) GetCustomerProfile(ctx context.Context, id int) (*dto.
 		return nil, err_msg.NewCustomErrors(fiber.StatusInternalServerError, err_msg.WithMessage(constants.ErrInternalServerError))
 	}
 
+	var limits []dtoLimit.CreditLimit
+	for _, limit := range customer.Limits {
+		limits = append(limits, dtoLimit.CreditLimit{
+			Tenor:       limit.TenorMonth,
+			LimitAmount: limit.LimitAmount,
+		})
+	}
+
 	return &dto.GetCustomerProfileResponse{
 		ID:              customer.ID,
 		Nik:             customer.Nik,
@@ -50,11 +58,8 @@ func (s *customerService) GetCustomerProfile(ctx context.Context, id int) (*dto.
 		Salary:          customer.Salary,
 		KtpPhotoPath:    customer.KtpPhotoPath,
 		SelfiePhotoPath: customer.SelfiePhotoPath,
-		Limits: dtoLimit.CreditLimit{
-			Tenor:       customer.TenorMonth,
-			LimitAmount: customer.LimitAmount,
-		},
-		CreatedAt: customer.CreatedAt.Format(constants.DateTimeFormat),
-		UpdatedAt: customer.UpdatedAt.Format(constants.DateTimeFormat),
+		Limits:          limits,
+		CreatedAt:       customer.CreatedAt.Format(constants.DateTimeFormat),
+		UpdatedAt:       customer.UpdatedAt.Format(constants.DateTimeFormat),
 	}, nil
 }
