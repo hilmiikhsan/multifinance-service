@@ -236,30 +236,81 @@ For more details on `goose`, visit the [official documentation](https://github.c
 
 ### Customers Table
 
-- **id**: Primary Key
-- **nik**: Unique National ID
-- **full_name**: Customer Full Name
-- **legal_name**: Name on Legal Documents
-- **birth_place**: Place of Birth
-- **birth_date**: Date of Birth
-- **salary**: Customer's Monthly Income
-- **ktp_photo_path**: KTP (ID Card) Photo Path
-- **selfie_photo_path**: Selfie Photo Path
+- **id**: Primary Key (BIGINT, AUTO_INCREMENT)  
+  Primary key for the customers table.  
+- **nik**: Unique National ID (VARCHAR(16), NOT NULL, UNIQUE)  
+  Unique identification number (NIK).  
+- **email**: Email Address (VARCHAR(255), NOT NULL, UNIQUE)  
+  Unique email address for the customer.  
+- **password**: Password (VARCHAR(255), NOT NULL)  
+  Hashed password of the customer.  
+- **full_name**: Full Name (VARCHAR(255), NOT NULL)  
+  Full name of the customer.  
+- **legal_name**: Legal Name (VARCHAR(255), NOT NULL)  
+  Name as per official/legal documents.  
+- **birth_place**: Place of Birth (VARCHAR(100))  
+  Place where the customer was born.  
+- **birth_date**: Date of Birth (DATE)  
+  Date of birth of the customer.  
+- **salary**: Monthly Income (DECIMAL(15,2))  
+  Customer's monthly salary.  
+- **ktp_photo_path**: KTP Photo Path (VARCHAR(255))  
+  File path to the customer's KTP photo.  
+- **selfie_photo_path**: Selfie Photo Path (VARCHAR(255))  
+  File path to the customer's selfie photo.  
+- **created_at**: Record Creation Timestamp (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP)  
+  Timestamp when the customer record was created.  
+- **updated_at**: Record Update Timestamp (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)  
+  Timestamp when the customer record was last updated.  
+- **deleted_at**: Soft Delete Timestamp (TIMESTAMP, NULLABLE)  
+  Timestamp for soft delete (if applicable).  
+
+---
+
+### Credit Limits Table
+
+- **id**: Primary Key (BIGINT, AUTO_INCREMENT)  
+  Primary key for the credit limits table.  
+- **customer_id**: Foreign Key (BIGINT, NOT NULL, REFERENCES `customers(id)`)  
+  Links the credit limit to a specific customer.  
+- **tenor_month**: Loan Tenure in Months (INT, NOT NULL)  
+  Number of months for the credit tenor.  
+- **limit_amount**: Credit Limit Amount (DECIMAL(15,2), NOT NULL)  
+  Approved credit limit for the specific tenor.  
+- **created_at**: Record Creation Timestamp (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP)  
+  Timestamp when the credit limit record was created.  
+- **updated_at**: Record Update Timestamp (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)  
+  Timestamp when the credit limit record was last updated.  
+
+---
 
 ### Transactions Table
 
-- **id**: Primary Key
-- **customer_id**: Foreign Key (Customers)
-- **contract_number**: Unique Transaction Contract Number
-- **on_the_road_price**: Total Asset Price
-- **admin_fee**: Administrative Transaction Fee
-- **installment_amount**: Monthly Installment Amount
-- **interest_amount**: Total Interest Amount
-- **asset_name**: Purchased Asset Name
-- **tenor_months**: Loan Tenure in Months
-- **created_at**: Transaction Creation Timestamp
+- **id**: Primary Key (BIGINT, AUTO_INCREMENT)  
+  Primary key for the transactions table.  
+- **customer_id**: Foreign Key (BIGINT, NOT NULL, REFERENCES `customers(id)`)  
+  Links the transaction to a specific customer.  
+- **contract_number**: Contract Number (VARCHAR(50), NOT NULL, UNIQUE)  
+  Unique contract number for the transaction.  
+- **on_the_road_price**: On-the-Road Price (DECIMAL(15,2))  
+  Total asset price for the transaction.  
+- **admin_fee**: Administrative Fee (DECIMAL(15,2))  
+  Administrative fee associated with the transaction.  
+- **installment_amount**: Installment Amount (DECIMAL(15,2))  
+  Monthly installment payment amount.  
+- **interest_amount**: Interest Amount (DECIMAL(15,2))  
+  Total interest amount for the transaction.  
+- **asset_name**: Asset Name (VARCHAR(255))  
+  Name of the asset purchased in the transaction.  
+- **created_at**: Record Creation Timestamp (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP)  
+  Timestamp when the transaction record was created.  
+- **updated_at**: Record Update Timestamp (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)  
+  Timestamp when the transaction record was last updated.  
+- **deleted_at**: Soft Delete Timestamp (TIMESTAMP, NULLABLE)  
+  Timestamp for soft delete (if applicable).  
 
 ---
+
 
 ## 🏗 Architectural Highlights
 
