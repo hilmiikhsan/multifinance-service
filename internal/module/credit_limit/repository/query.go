@@ -2,7 +2,7 @@ package repository
 
 const (
 	queryInsertNewCreditLimit = `
-		INSERT INTO credit_limitS (customer_id, tenor_month, limit_amount) VALUES (?, ?, ?)
+		INSERT INTO credit_limits (customer_id, tenor_month, limit_amount) VALUES (?, ?, ?)
 	`
 
 	queryFindCreditLimitByCustomerID = `

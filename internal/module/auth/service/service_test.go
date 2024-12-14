@@ -17,6 +17,7 @@ import (
 	"github.com/hilmiikhsan/multifinance-service/pkg/jwt_handler"
 	"github.com/hilmiikhsan/multifinance-service/pkg/utils"
 	"github.com/jmoiron/sqlx"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -656,8 +657,12 @@ func Test_authService_Logout(t *testing.T) {
 				jwt:     mockJWT,
 				redisDB: mockRedis,
 			}
-			if err := s.Logout(tt.args.ctx, tt.args.accessToken, tt.args.locals); (err != nil) != tt.wantErr {
-				t.Errorf("authService.Logout() error = %v, wantErr %v", err, tt.wantErr)
+			err := s.Logout(tt.args.ctx, tt.args.accessToken, tt.args.locals)
+
+			if tt.wantErr {
+				assert.Error(t, err, "expected an error but got none")
+			} else {
+				assert.NoError(t, err, "did not expect an error but got one")
 			}
 		})
 	}

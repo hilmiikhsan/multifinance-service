@@ -112,14 +112,13 @@ func Test_customerService_GetCustomerProfile(t *testing.T) {
 
 			got, err := s.GetCustomerProfile(tt.args.ctx, tt.args.id)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("customerService.GetCustomerProfile() error = %v, wantErr %v", err, tt.wantErr)
-				return
+			if tt.wantErr {
+				assert.Error(t, err, "expected an error but got none")
+			} else {
+				assert.NoError(t, err, "did not expect an error but got one")
 			}
 
-			if !tt.wantErr && !assert.Equal(t, tt.want, got) {
-				t.Errorf("customerService.GetCustomerProfile() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, got, "unexpected result from GetCustomerProfile")
 		})
 	}
 }

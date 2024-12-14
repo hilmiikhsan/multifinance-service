@@ -15,6 +15,7 @@ type CreditLimitRepository interface {
 	FindLimitByCustomerAndTenor(ctx context.Context, tx *sql.Tx, customerID, tenorMonth int) (*entity.Limits, error)
 }
 
+//go:generate mockgen -source=ports.go -destination=../handler/rest/handler_mock_test.go -package=rest
 type CreditLimitService interface {
 	GetCreditLimits(ctx context.Context, customerID int) (*[]dto.GetCreditLimitsResponse, error)
 }

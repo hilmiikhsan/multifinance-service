@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"reflect"
 	"regexp"
 	"testing"
 	"time"
@@ -305,19 +304,13 @@ func Test_customerRepository_FindCustomerByEmail(t *testing.T) {
 				db: mysqlDB,
 			}
 			got, err := r.FindCustomerByEmail(tt.args.ctx, tt.args.email)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("customerRepository.FindCustomerByEmail() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("customerRepository.FindCustomerByEmail() = %v, want %v", got, tt.want)
-			}
+
+			assert.Equal(t, tt.wantErr, err != nil, "error state mismatch")
+			assert.Equal(t, tt.want, got, "result mismatch")
 		})
 	}
 
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
-	}
+	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
 func compareCustomersIgnoringTimestamps(t *testing.T, got, want *entity.Customer) {
