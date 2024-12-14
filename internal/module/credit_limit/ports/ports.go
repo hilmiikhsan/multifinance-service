@@ -8,6 +8,7 @@ import (
 	"github.com/hilmiikhsan/multifinance-service/internal/module/credit_limit/entity"
 )
 
+//go:generate mockgen -source=ports.go -destination=../service/service_mock_test.go -package=service
 type CreditLimitRepository interface {
 	InsertNewCreditLimit(ctx context.Context, tx *sql.Tx, data *entity.CreditLimit) error
 	FindCreditLimitByCustomerID(ctx context.Context, customerID int) (*[]entity.Limits, error)
