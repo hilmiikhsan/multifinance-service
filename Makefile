@@ -44,3 +44,29 @@ goose-status:
 seed:
 # make seed total=10 table=roles
 	$(GO_CMD) run $(MAIN) seed -total=$(total) -table=$(table)
+
+# Mock generation target
+generate-mock:
+# example : make generate-mock module=customer source=ports/ports.go destination=service/service_mock_test.go package=service
+	@echo " >> Installing mockgen if not installed"
+	@go install github.com/golang/mock/mockgen@latest
+ifndef module
+	$(error Usage: make generate-mock module=<module_name> source=<source_file> destination=<destination_file> package=<package_name>)
+endif
+ifndef source
+	$(error Usage: make generate-mock module=<module_name> source=<source_file> destination=<destination_file> package=<package_name>)
+endif
+ifndef destination
+	$(error Usage: make generate-mock module=<module_name> source=<source_file> destination=<destination_file> package=<package_name>)
+endif
+ifndef package
+	$(error Usage: make generate-mock module=<module_name> source=<source_file> destination=<destination_file> package=<package_name>)
+endif
+	@mockgen -source=internal/module/$(module)/$(source) \
+		-destination=internal/module/$(module)/$(destination) \
+		-package=$(package)
+	@echo " >> Mock generated for module: $(module)"
+
+mock-all:
+# make mock-all
+	go generate ./...

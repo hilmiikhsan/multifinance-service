@@ -54,7 +54,7 @@ func (s *customerService) GetCustomerProfile(ctx context.Context, id int) (*dto.
 		FullName:        customer.FullName,
 		LegalName:       customer.LegalName,
 		BirthPlace:      customer.BirthPlace,
-		BirthDate:       customer.BirthDate.Format(constants.DateTimeFormat),
+		BirthDate:       customer.BirthDate.Format(constants.DateFormat),
 		Salary:          customer.Salary,
 		KtpPhotoPath:    customer.KtpPhotoPath,
 		SelfiePhotoPath: customer.SelfiePhotoPath,

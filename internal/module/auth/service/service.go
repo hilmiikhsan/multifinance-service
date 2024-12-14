@@ -53,7 +53,7 @@ func (s *authService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 
 	req.Password = hashedPassword
 
-	birthDate, _ := time.Parse(constants.DateTimeFormat, req.BirthDate)
+	birthDate, _ := time.Parse(constants.DateFormat, req.BirthDate)
 
 	tx, err := s.db.Begin()
 	if err != nil {
