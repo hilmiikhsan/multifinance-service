@@ -294,3 +294,86 @@ func Test_authHandler_refreshToken(t *testing.T) {
 		})
 	}
 }
+
+func Test_authHandler_logout(t *testing.T) {
+	ctrlMock := gomock.NewController(t)
+	defer ctrlMock.Finish()
+
+	mockSvc := NewMockAuthService(ctrlMock)
+	mockValidator := NewMockValidator(ctrlMock)
+
+	type args struct {
+		body        string
+		accessToken string
+		statusCode  int
+		mockFn      func()
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Success logout",
+			args: args{
+				accessToken: "Bearer validToken",
+				statusCode:  fiber.StatusOK,
+				mockFn: func() {
+					// Simulate a successful logout service call
+					mockSvc.EXPECT().Logout(gomock.Any(), "validToken", gomock.Any()).Return(nil)
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Missing access token",
+			args: args{
+				accessToken: "",
+				statusCode:  fiber.StatusUnauthorized,
+				mockFn: func() {
+					// No service call expected
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Service returns error",
+			args: args{
+				accessToken: "Bearer invalidToken",
+				statusCode:  fiber.StatusInternalServerError,
+				mockFn: func() {
+					mockSvc.EXPECT().Logout(gomock.Any(), "invalidToken", gomock.Any()).Return(errors.New("invalid token")).Times(1)
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := fiber.New()
+			handler := &authHandler{
+				service:   mockSvc,
+				validator: mockValidator,
+			}
+
+			app.Post("/logout", handler.logout)
+
+			tt.args.mockFn()
+
+			req := httptest.NewRequest(http.MethodPost, "/logout", bytes.NewBufferString(tt.args.body))
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Authorization", tt.args.accessToken)
+			resp, _ := app.Test(req)
+
+			assert.Equal(t, tt.args.statusCode, resp.StatusCode)
+
+			if resp.StatusCode == fiber.StatusOK {
+				assert.NotNil(t, resp.Body)
+			} else {
+				assert.Equal(t, tt.args.statusCode, resp.StatusCode)
+			}
+		})
+	}
+}
