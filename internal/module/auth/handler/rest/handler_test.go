@@ -3,6 +3,7 @@ package rest
 import (
 	"bytes"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -210,6 +211,83 @@ func Test_authHandler_login(t *testing.T) {
 
 			if resp.StatusCode == http.StatusOK {
 				assert.NotNil(t, resp.Body)
+			} else {
+				assert.Equal(t, tt.args.statusCode, resp.StatusCode)
+			}
+		})
+	}
+}
+
+func Test_authHandler_refreshToken(t *testing.T) {
+	ctrlMock := gomock.NewController(t)
+	defer ctrlMock.Finish()
+
+	mockSvc := NewMockAuthService(ctrlMock)
+	mockValidator := NewMockValidator(ctrlMock)
+
+	type args struct {
+		body        string
+		accessToken string
+		statusCode  int
+		mockFn      func()
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Success refresh token",
+			args: args{
+				accessToken: "Bearer validToken",
+				statusCode:  fiber.StatusOK,
+				mockFn: func() {
+					// Update mock to return the correct response type
+					mockSvc.EXPECT().RefreshToken(gomock.Any(), "validToken").Return(&dto.RefreshTokenResponse{
+						Token: "newAccessToken",
+					}, nil).Times(1)
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Missing access token",
+			args: args{
+				accessToken: "",
+				statusCode:  fiber.StatusUnauthorized,
+				mockFn: func() {
+					// No service call expected
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := fiber.New()
+			handler := &authHandler{
+				service:   mockSvc,
+				validator: mockValidator,
+			}
+
+			app.Post("/refresh-token", handler.refreshToken)
+
+			tt.args.mockFn()
+
+			req := httptest.NewRequest(http.MethodPost, "/refresh-token", bytes.NewBufferString(tt.args.body))
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Authorization", tt.args.accessToken)
+			resp, _ := app.Test(req)
+
+			assert.Equal(t, tt.args.statusCode, resp.StatusCode)
+
+			if resp.StatusCode == fiber.StatusOK {
+				assert.NotNil(t, resp.Body)
+				// If the response body contains the new token, check for it
+				body, _ := io.ReadAll(resp.Body)
+				assert.Contains(t, string(body), "newAccessToken")
 			} else {
 				assert.Equal(t, tt.args.statusCode, resp.StatusCode)
 			}
