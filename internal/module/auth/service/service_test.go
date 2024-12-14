@@ -418,3 +418,113 @@ func Test_authService_Login(t *testing.T) {
 		})
 	}
 }
+
+func Test_authService_RefreshToken(t *testing.T) {
+	ctrlMock := gomock.NewController(t)
+	defer ctrlMock.Finish()
+
+	mockJWT := NewMockJWT(ctrlMock)
+
+	type args struct {
+		ctx         context.Context
+		accessToken string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *dto.RefreshTokenResponse
+		wantErr bool
+		mockFn  func(args args)
+	}{
+		{
+			name: "RefreshToken Success",
+			args: args{
+				ctx:         context.Background(),
+				accessToken: "valid-access-token",
+			},
+			want: &dto.RefreshTokenResponse{
+				Token: "new-access-token",
+			},
+			wantErr: false,
+			mockFn: func(args args) {
+				mockJWT.EXPECT().
+					ParseTokenString(args.ctx, args.accessToken).
+					Return(&jwt_handler.CustomClaims{
+						Nik:      "123456789",
+						Email:    "test@example.com",
+						FullName: "Test User",
+					}, nil)
+
+				mockJWT.EXPECT().
+					GenerateTokenString(args.ctx, jwt_handler.CostumClaimsPayload{
+						Nik:       "123456789",
+						Email:     "test@example.com",
+						FullName:  "Test User",
+						TokenType: constants.AccessTokenType,
+					}).
+					Return("new-access-token", nil)
+			},
+		},
+		{
+			name: "Invalid Access Token",
+			args: args{
+				ctx:         context.Background(),
+				accessToken: "invalid-access-token",
+			},
+			want:    nil,
+			wantErr: true,
+			mockFn: func(args args) {
+				mockJWT.EXPECT().
+					ParseTokenString(args.ctx, args.accessToken).
+					Return(nil, errors.New("invalid token"))
+			},
+		},
+		{
+			name: "Error Generating New Token",
+			args: args{
+				ctx:         context.Background(),
+				accessToken: "valid-access-token",
+			},
+			want:    nil,
+			wantErr: true,
+			mockFn: func(args args) {
+				mockJWT.EXPECT().
+					ParseTokenString(args.ctx, args.accessToken).
+					Return(&jwt_handler.CustomClaims{
+						Nik:      "123456789",
+						Email:    "test@example.com",
+						FullName: "Test User",
+					}, nil)
+
+				mockJWT.EXPECT().
+					GenerateTokenString(args.ctx, jwt_handler.CostumClaimsPayload{
+						Nik:       "123456789",
+						Email:     "test@example.com",
+						FullName:  "Test User",
+						TokenType: constants.AccessTokenType,
+					}).
+					Return("", errors.New("failed to generate token"))
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockFn(tt.args)
+
+			s := &authService{
+				jwt: mockJWT,
+			}
+
+			got, err := s.RefreshToken(tt.args.ctx, tt.args.accessToken)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("authService.RefreshToken() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("authService.RefreshToken() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
