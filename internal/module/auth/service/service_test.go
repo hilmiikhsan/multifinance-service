@@ -11,6 +11,8 @@ import (
 	"github.com/hilmiikhsan/multifinance-service/internal/module/auth/dto"
 	creditLimitEntity "github.com/hilmiikhsan/multifinance-service/internal/module/credit_limit/entity"
 	"github.com/hilmiikhsan/multifinance-service/internal/module/customer/entity"
+	"github.com/hilmiikhsan/multifinance-service/pkg/jwt_handler"
+	"github.com/hilmiikhsan/multifinance-service/pkg/utils"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/mock/gomock"
 )
@@ -204,6 +206,214 @@ func Test_authService_Register(t *testing.T) {
 
 			if err := dbMock.ExpectationsWereMet(); err != nil {
 				t.Errorf("unfulfilled expectations: %v", err)
+			}
+		})
+	}
+}
+
+func Test_authService_Login(t *testing.T) {
+	ctrlMock := gomock.NewController(t)
+	defer ctrlMock.Finish()
+
+	customerMockRepo := NewMockCustomerRepository(ctrlMock)
+	mockJWT := NewMockJWT(ctrlMock)
+
+	password, _ := utils.HashPassword("password123")
+
+	type args struct {
+		ctx context.Context
+		req *dto.LoginRequest
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *dto.LoginResponse
+		wantErr bool
+		mockFn  func(args args)
+	}{
+		{
+			name: "Login Success",
+			args: args{
+				ctx: context.Background(),
+				req: &dto.LoginRequest{
+					Email:    "test@example.com",
+					Password: "password123",
+				},
+			},
+			want: &dto.LoginResponse{
+				ID:           1,
+				Email:        "test@example.com",
+				FullName:     "Test User",
+				Token:        "access-token",
+				RefreshToken: "refresh-token",
+			},
+			wantErr: false,
+			mockFn: func(args args) {
+				customerMockRepo.EXPECT().
+					FindCustomerByEmail(args.ctx, args.req.Email).
+					Return(&entity.Customer{
+						ID:       1,
+						Nik:      "123456789",
+						Email:    "test@example.com",
+						FullName: "Test User",
+						Password: password,
+					}, nil)
+
+				mockJWT.EXPECT().
+					GenerateTokenString(args.ctx, jwt_handler.CostumClaimsPayload{
+						CustomerID: 1,
+						Nik:        "123456789",
+						Email:      "test@example.com",
+						FullName:   "Test User",
+						TokenType:  constants.AccessTokenType,
+					}).
+					Return("access-token", nil)
+
+				mockJWT.EXPECT().
+					GenerateTokenString(args.ctx, jwt_handler.CostumClaimsPayload{
+						CustomerID: 1,
+						Nik:        "123456789",
+						Email:      "test@example.com",
+						FullName:   "Test User",
+						TokenType:  constants.RefreshTokenType,
+					}).
+					Return("refresh-token", nil)
+			},
+		},
+		{
+			name: "Email Not Found",
+			args: args{
+				ctx: context.Background(),
+				req: &dto.LoginRequest{
+					Email:    "notfound@example.com",
+					Password: "password123",
+				},
+			},
+			want:    nil,
+			wantErr: true,
+			mockFn: func(args args) {
+				customerMockRepo.EXPECT().
+					FindCustomerByEmail(args.ctx, args.req.Email).
+					Return(nil, nil)
+			},
+		},
+		{
+			name: "Incorrect Password",
+			args: args{
+				ctx: context.Background(),
+				req: &dto.LoginRequest{
+					Email:    "test@example.com",
+					Password: "wrongpassword",
+				},
+			},
+			want:    nil,
+			wantErr: true,
+			mockFn: func(args args) {
+				customerMockRepo.EXPECT().
+					FindCustomerByEmail(args.ctx, args.req.Email).
+					Return(&entity.Customer{
+						ID:       1,
+						Nik:      "123456789",
+						Email:    "test@example.com",
+						FullName: "Test User",
+						Password: password,
+					}, nil)
+			},
+		},
+		{
+			name: "Error Generating Access Token",
+			args: args{
+				ctx: context.Background(),
+				req: &dto.LoginRequest{
+					Email:    "test@example.com",
+					Password: "password123",
+				},
+			},
+			want:    nil,
+			wantErr: true,
+			mockFn: func(args args) {
+				customerMockRepo.EXPECT().
+					FindCustomerByEmail(args.ctx, args.req.Email).
+					Return(&entity.Customer{
+						ID:       1,
+						Nik:      "123456789",
+						Email:    "test@example.com",
+						FullName: "Test User",
+						Password: password,
+					}, nil)
+
+				mockJWT.EXPECT().
+					GenerateTokenString(args.ctx, jwt_handler.CostumClaimsPayload{
+						CustomerID: 1,
+						Nik:        "123456789",
+						Email:      "test@example.com",
+						FullName:   "Test User",
+						TokenType:  constants.AccessTokenType,
+					}).
+					Return("", errors.New("failed to generate token"))
+			},
+		},
+		{
+			name: "Error Generating Refresh Token",
+			args: args{
+				ctx: context.Background(),
+				req: &dto.LoginRequest{
+					Email:    "test@example.com",
+					Password: "password123",
+				},
+			},
+			want:    nil,
+			wantErr: true,
+			mockFn: func(args args) {
+				customerMockRepo.EXPECT().
+					FindCustomerByEmail(args.ctx, args.req.Email).
+					Return(&entity.Customer{
+						ID:       1,
+						Nik:      "123456789",
+						Email:    "test@example.com",
+						FullName: "Test User",
+						Password: password,
+					}, nil)
+
+				mockJWT.EXPECT().
+					GenerateTokenString(args.ctx, jwt_handler.CostumClaimsPayload{
+						CustomerID: 1,
+						Nik:        "123456789",
+						Email:      "test@example.com",
+						FullName:   "Test User",
+						TokenType:  constants.AccessTokenType,
+					}).
+					Return("access-token", nil)
+
+				mockJWT.EXPECT().
+					GenerateTokenString(args.ctx, jwt_handler.CostumClaimsPayload{
+						CustomerID: 1,
+						Nik:        "123456789",
+						Email:      "test@example.com",
+						FullName:   "Test User",
+						TokenType:  constants.RefreshTokenType,
+					}).
+					Return("", errors.New("failed to generate token"))
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockFn(tt.args)
+
+			s := &authService{
+				customerRepository: customerMockRepo,
+				jwt:                mockJWT,
+			}
+
+			got, err := s.Login(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("authService.Login() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("authService.Login() = %v, want %v", got, tt.want)
 			}
 		})
 	}
