@@ -3,11 +3,14 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	reflect "reflect"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/go-redis/redis/v8"
 	"github.com/hilmiikhsan/multifinance-service/constants"
+	"github.com/hilmiikhsan/multifinance-service/internal/middleware"
 	"github.com/hilmiikhsan/multifinance-service/internal/module/auth/dto"
 	creditLimitEntity "github.com/hilmiikhsan/multifinance-service/internal/module/credit_limit/entity"
 	"github.com/hilmiikhsan/multifinance-service/internal/module/customer/entity"
@@ -524,6 +527,137 @@ func Test_authService_RefreshToken(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("authService.RefreshToken() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_authService_Logout(t *testing.T) {
+	ctrlMock := gomock.NewController(t)
+	defer ctrlMock.Finish()
+
+	mockJWT := NewMockJWT(ctrlMock)
+	mockRedis := NewMockRedisRepository(ctrlMock)
+
+	type args struct {
+		ctx         context.Context
+		accessToken string
+		locals      *middleware.Locals
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+		mockFn  func(args args)
+	}{
+		{
+			name: "Success - Token Deleted",
+			args: args{
+				ctx:         context.Background(),
+				accessToken: "valid-access-token",
+				locals: &middleware.Locals{
+					Nik: "123456789",
+				},
+			},
+			wantErr: false,
+			mockFn: func(args args) {
+				key := fmt.Sprintf("%s:%s", args.locals.Nik, constants.AccessTokenType)
+
+				mockRedis.EXPECT().
+					Get(args.ctx, key).
+					Return("token-in-redis", nil)
+
+				mockJWT.EXPECT().
+					ParseTokenString(args.ctx, args.accessToken).
+					Return(&jwt_handler.CustomClaims{
+						Nik: args.locals.Nik,
+					}, nil)
+
+				mockRedis.EXPECT().
+					Del(args.ctx, key).
+					Return(nil)
+			},
+		},
+		{
+			name: "Failure - Token Not Found in Redis",
+			args: args{
+				ctx:         context.Background(),
+				accessToken: "valid-access-token",
+				locals: &middleware.Locals{
+					Nik: "123456789",
+				},
+			},
+			wantErr: true,
+			mockFn: func(args args) {
+				key := fmt.Sprintf("%s:%s", args.locals.Nik, constants.AccessTokenType)
+
+				mockRedis.EXPECT().
+					Get(args.ctx, key).
+					Return("", redis.Nil)
+			},
+		},
+		{
+			name: "Failure - Invalid Access Token",
+			args: args{
+				ctx:         context.Background(),
+				accessToken: "invalid-access-token",
+				locals: &middleware.Locals{
+					Nik: "123456789",
+				},
+			},
+			wantErr: true,
+			mockFn: func(args args) {
+				key := fmt.Sprintf("%s:%s", args.locals.Nik, constants.AccessTokenType)
+
+				mockRedis.EXPECT().
+					Get(args.ctx, key).
+					Return("token-in-redis", nil)
+
+				mockJWT.EXPECT().
+					ParseTokenString(args.ctx, args.accessToken).
+					Return(nil, errors.New("invalid token"))
+			},
+		},
+		{
+			name: "Failure - Redis Del Error",
+			args: args{
+				ctx:         context.Background(),
+				accessToken: "valid-access-token",
+				locals: &middleware.Locals{
+					Nik: "123456789",
+				},
+			},
+			wantErr: true,
+			mockFn: func(args args) {
+				key := fmt.Sprintf("%s:%s", args.locals.Nik, constants.AccessTokenType)
+
+				mockRedis.EXPECT().
+					Get(args.ctx, key).
+					Return("token-in-redis", nil)
+
+				mockJWT.EXPECT().
+					ParseTokenString(args.ctx, args.accessToken).
+					Return(&jwt_handler.CustomClaims{
+						Nik: args.locals.Nik,
+					}, nil)
+
+				mockRedis.EXPECT().
+					Del(args.ctx, key).
+					Return(errors.New("redis delete error"))
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockFn(tt.args)
+
+			s := &authService{
+				jwt:     mockJWT,
+				redisDB: mockRedis,
+			}
+			if err := s.Logout(tt.args.ctx, tt.args.accessToken, tt.args.locals); (err != nil) != tt.wantErr {
+				t.Errorf("authService.Logout() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
