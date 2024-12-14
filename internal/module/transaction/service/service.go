@@ -125,3 +125,13 @@ func (s *transactionService) GetDetailTransaction(ctx context.Context, id, custo
 		CreatedAt:         transaction.CreatedAt.Format(constants.DateTimeFormat),
 	}, nil
 }
+
+func (s *transactionService) GetHistoryListTransction(ctx context.Context, req *dto.GetHistoryListTransactionRequest, customerID int) (*dto.GetHistoryListTransactionResponse, error) {
+	res, err := s.transactionRepository.FindTransactionByCustomerID(ctx, req, customerID)
+	if err != nil {
+		log.Error().Err(err).Int("customer_id", customerID).Msg("service::GetHistoryListTransction - Failed to find transaction by customer ID")
+		return nil, err_msg.NewCustomErrors(fiber.StatusInternalServerError, err_msg.WithMessage(constants.ErrInternalServerError))
+	}
+
+	return res, nil
+}

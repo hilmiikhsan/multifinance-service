@@ -57,6 +57,7 @@ func NewTransactionHandler() *transactionHandler {
 func (h *transactionHandler) TransactionRoute(router fiber.Router) {
 	router.Post("/create", h.middleware.AuthBearer, h.createTranscation)
 	router.Get("/:id", h.middleware.AuthBearer, h.getDetailTransaction)
+	router.Get("/", h.middleware.AuthBearer, h.getHistoryListTransaction)
 }
 
 func (h *transactionHandler) createTranscation(c *fiber.Ctx) error {
@@ -113,6 +114,37 @@ func (h *transactionHandler) getDetailTransaction(c *fiber.Ctx) error {
 	res, err := h.service.GetDetailTransaction(ctx, id, customerID)
 	if err != nil {
 		log.Error().Err(err).Int("customer_id", customerID).Msg("handler::getDetailTransaction - Failed to get detail transaction")
+		code, errs := err_msg.Errors[error](err)
+		return c.Status(code).JSON(response.Error(errs))
+	}
+
+	return c.Status(fiber.StatusOK).JSON(response.Success(res, ""))
+}
+
+func (h *transactionHandler) getHistoryListTransaction(c *fiber.Ctx) error {
+	var (
+		req        = new(dto.GetHistoryListTransactionRequest)
+		ctx        = c.Context()
+		validators = adapter.Adapters.Validator
+		locals     = middleware.GetLocals(c)
+	)
+
+	if err := c.QueryParser(req); err != nil {
+		log.Warn().Err(err).Msg("handler::getHistoryListTransaction - Failed to parse request query")
+		return c.Status(fiber.StatusBadRequest).JSON(response.Error(err))
+	}
+
+	req.SetDefault()
+
+	if err := validators.Validate(req); err != nil {
+		log.Warn().Err(err).Msg("handler::getHistoryListTransaction - Invalid request query")
+		code, errs := err_msg.Errors(err, req)
+		return c.Status(code).JSON(response.Error(errs))
+	}
+
+	res, err := h.service.GetHistoryListTransction(ctx, req, locals.GetCustomerID())
+	if err != nil {
+		log.Error().Err(err).Int("customer_id", locals.GetCustomerID()).Msg("handler::getHistoryListTransaction - Failed to get history list transaction")
 		code, errs := err_msg.Errors[error](err)
 		return c.Status(code).JSON(response.Error(errs))
 	}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/hilmiikhsan/multifinance-service/constants"
+	"github.com/hilmiikhsan/multifinance-service/internal/module/transaction/dto"
 	"github.com/hilmiikhsan/multifinance-service/internal/module/transaction/entity"
 	"github.com/hilmiikhsan/multifinance-service/internal/module/transaction/ports"
 	"github.com/hilmiikhsan/multifinance-service/pkg/err_msg"
@@ -60,4 +61,52 @@ func (r *transactionRepository) FindTransactionByIdAndCustomerID(ctx context.Con
 	}
 
 	return res, nil
+}
+
+func (r *transactionRepository) FindTransactionByCustomerID(ctx context.Context, req *dto.GetHistoryListTransactionRequest, customerID int) (*dto.GetHistoryListTransactionResponse, error) {
+	var (
+		resp       = new(dto.GetHistoryListTransactionResponse)
+		data       = make([]dto.HistoryListTransactionItem, 0, req.Paginate)
+		query      = queryFindTransactionByCustomerID
+		countQuery = queryCountTransactionByCustomerID
+	)
+
+	var totalData int
+	countQuery, countArgs, err := sqlx.Named(countQuery, map[string]interface{}{
+		"customer_id": customerID,
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("repository::FindTransactionByCustomerID - Failed to bind named query for count")
+		return nil, err
+	}
+
+	countQuery = r.db.Rebind(countQuery)
+	err = r.db.GetContext(ctx, &totalData, countQuery, countArgs...)
+	if err != nil {
+		log.Error().Err(err).Msg("repository::FindTransactionByCustomerID - Failed to count transactions")
+		return nil, err
+	}
+
+	query, args, err := sqlx.Named(query, map[string]interface{}{
+		"customer_id": customerID,
+		"limit":       req.Paginate,
+		"offset":      req.Paginate * (req.Page - 1),
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("repository::FindTransactionByCustomerID - Failed to bind named query")
+		return nil, err
+	}
+
+	query = r.db.Rebind(query)
+	err = r.db.SelectContext(ctx, &data, query, args...)
+	if err != nil {
+		log.Error().Err(err).Any("payload", req).Msg("repository::FindTransactionByCustomerID - Failed to find transactions")
+		return nil, err
+	}
+
+	resp.Items = data
+	resp.Meta.TotalData = totalData
+	resp.Meta.CountTotalPage(req.Page, req.Paginate, totalData)
+
+	return resp, nil
 }
