@@ -14,7 +14,7 @@ type RegisterRequest struct {
 }
 
 type RegisterResponse struct {
-	ID    int    `json:"id"`
+	ID    int64  `json:"id"`
 	Email string `json:"email"`
 }
 
@@ -24,7 +24,7 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	ID           int    `json:"id"`
+	ID           int64  `json:"id"`
 	Email        string `json:"email"`
 	FullName     string `json:"full_name"`
 	Token        string `json:"token"`

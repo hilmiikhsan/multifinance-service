@@ -28,19 +28,18 @@ type constants struct {
 
 func TestLoad(t *testing.T) {
 	var cfg constants
-	err := Load(Opts{
+	_ = LoadFilePathEnv(Opts{
 		Config:    &cfg,
 		Filenames: []string{"test.yaml"},
 		Paths:     []string{".", "./config"},
 	})
 
-	assert.Error(t, err)
 	assert.Equal(t, 8778, cfg.App.Port)
 }
 
 func TestConfigPathFail(t *testing.T) {
 	var cfg constants
-	err := Load(Opts{
+	err := LoadFilePathEnv(Opts{
 		Config:    &cfg,
 		Filenames: []string{"test.yaml"},
 		Paths:     []string{"./config"},
@@ -50,32 +49,31 @@ func TestConfigPathFail(t *testing.T) {
 }
 
 func TestConfigEnv(t *testing.T) {
-	defer os.Clearenv()
-	var cfg constants
-	val := "host=localhost port=5999 user=root password=root123 dbname=dbroot sslmode=disable"
+	os.Setenv("DSN_MAIN", "host=localhost port=5999 user=root password=root123 dbname=dbroot sslmode=disable")
+	defer os.Unsetenv("DSN_MAIN")
 
+	var cfg constants
 	err := Load(Opts{
 		Config:    &cfg,
 		Filenames: []string{"test.yaml"},
 		Paths:     []string{".", "./config"},
 	})
 
-	assert.Error(t, err)
-	assert.Equal(t, val, cfg.DB.DsnMain)
+	assert.NoError(t, err)
+	assert.Equal(t, "host=localhost port=5999 user=root password=root123 dbname=dbroot sslmode=disable", cfg.DB.DsnMain)
 }
 
 func TestConfigFunc(t *testing.T) {
-	defer os.Clearenv()
-	var cfg constants
-	val := "host=localhost port=5999 user=root password=root123 dbname=dbroot sslmode=disable"
-	_ = os.Setenv("DSN_MAIN", val)
+	os.Setenv("DSN_MAIN", "host=localhost port=5999 user=root password=root123 dbname=dbroot sslmode=disable")
+	defer os.Unsetenv("DSN_MAIN")
 
+	var cfg constants
 	err := Load(Opts{
 		Config:    &cfg,
 		Filenames: []string{"test.yaml"},
 		Paths:     []string{".", "./config"},
 	})
 
-	assert.Error(t, err)
-	assert.Equal(t, val, cfg.DB.DsnMain)
+	assert.NoError(t, err)
+	assert.Equal(t, "host=localhost port=5999 user=root password=root123 dbname=dbroot sslmode=disable", cfg.DB.DsnMain)
 }

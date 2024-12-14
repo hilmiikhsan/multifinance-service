@@ -206,7 +206,7 @@ func (s *authService) RefreshToken(ctx context.Context, accessToken string) (*dt
 	id, _ := strconv.Atoi(claims.ID)
 
 	token, err := s.jwt.GenerateTokenString(ctx, jwt_handler.CostumClaimsPayload{
-		CustomerID: id,
+		CustomerID: int64(id),
 		Nik:        claims.Nik,
 		Email:      claims.Email,
 		FullName:   claims.FullName,

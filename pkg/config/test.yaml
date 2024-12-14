@@ -7,4 +7,4 @@ App:
   debug: false # (true|false)
   env: development # ('development'|'staging'|'production')
   secret_key: sekret
-  expire_in: 40000
+  # expire_in: 40000

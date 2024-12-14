@@ -8,7 +8,7 @@ import (
 )
 
 type Customer struct {
-	ID              int             `db:"id"`
+	ID              int64           `db:"id"`
 	Nik             string          `db:"nik"`
 	Email           string          `db:"email"`
 	Password        string          `db:"password"`
@@ -27,7 +27,7 @@ type Customer struct {
 }
 
 type CustomerWithLimits struct {
-	CustomerID      int             `db:"id"`
+	CustomerID      int64           `db:"id"`
 	Nik             string          `db:"nik"`
 	Email           string          `db:"email"`
 	FullName        string          `db:"full_name"`

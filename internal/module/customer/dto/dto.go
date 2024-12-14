@@ -3,7 +3,7 @@ package dto
 import "github.com/hilmiikhsan/multifinance-service/internal/module/credit_limit/dto"
 
 type GetCustomerProfileResponse struct {
-	ID              int               `json:"id"`
+	ID              int64             `json:"id"`
 	Nik             string            `json:"nik"`
 	FullName        string            `json:"full_name"`
 	LegalName       string            `json:"legal_name"`
