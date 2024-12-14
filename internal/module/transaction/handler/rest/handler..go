@@ -22,10 +22,14 @@ import (
 type transactionHandler struct {
 	service    ports.TransactionService
 	middleware middleware.AuthMiddleware
+	validator  adapter.Validator
 }
 
 func NewTransactionHandler() *transactionHandler {
 	var handler = new(transactionHandler)
+
+	// validator
+	validator := adapter.Adapters.Validator
 
 	// redis
 	redisRepository := redisRepository.NewRedisRepository(adapter.Adapters.MultifinanceRedis)
@@ -50,6 +54,7 @@ func NewTransactionHandler() *transactionHandler {
 	// handler
 	handler.service = transactionService
 	handler.middleware = *middlewareHandler
+	handler.validator = validator
 
 	return handler
 }
@@ -62,10 +67,9 @@ func (h *transactionHandler) TransactionRoute(router fiber.Router) {
 
 func (h *transactionHandler) createTranscation(c *fiber.Ctx) error {
 	var (
-		ctx        = c.Context()
-		req        = new(dto.CreateTransactionRequest)
-		locals     = middleware.GetLocals(c)
-		validators = adapter.Adapters.Validator
+		ctx    = c.Context()
+		req    = new(dto.CreateTransactionRequest)
+		locals = middleware.GetLocals(c)
 	)
 
 	if err := c.BodyParser(req); err != nil {
@@ -73,10 +77,9 @@ func (h *transactionHandler) createTranscation(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(response.Error(err))
 	}
 
-	if err := validators.Validate(req); err != nil {
+	if err := h.validator.Validate(req); err != nil {
 		log.Warn().Err(err).Msg("handler::createTranscation - Invalid request body")
-		code, errs := err_msg.Errors(err, req)
-		return c.Status(code).JSON(response.Error(errs))
+		return c.Status(fiber.StatusBadRequest).JSON(response.Error(err))
 	}
 
 	req.CustomerID = locals.GetCustomerID()
@@ -123,10 +126,9 @@ func (h *transactionHandler) getDetailTransaction(c *fiber.Ctx) error {
 
 func (h *transactionHandler) getHistoryListTransaction(c *fiber.Ctx) error {
 	var (
-		req        = new(dto.GetHistoryListTransactionRequest)
-		ctx        = c.Context()
-		validators = adapter.Adapters.Validator
-		locals     = middleware.GetLocals(c)
+		req    = new(dto.GetHistoryListTransactionRequest)
+		ctx    = c.Context()
+		locals = middleware.GetLocals(c)
 	)
 
 	if err := c.QueryParser(req); err != nil {
@@ -136,10 +138,9 @@ func (h *transactionHandler) getHistoryListTransaction(c *fiber.Ctx) error {
 
 	req.SetDefault()
 
-	if err := validators.Validate(req); err != nil {
+	if err := h.validator.Validate(req); err != nil {
 		log.Warn().Err(err).Msg("handler::getHistoryListTransaction - Invalid request query")
-		code, errs := err_msg.Errors(err, req)
-		return c.Status(code).JSON(response.Error(errs))
+		return c.Status(fiber.StatusBadRequest).JSON(response.Error(err))
 	}
 
 	res, err := h.service.GetHistoryListTransction(ctx, req, locals.GetCustomerID())

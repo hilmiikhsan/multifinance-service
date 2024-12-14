@@ -20,10 +20,14 @@ import (
 type authHandler struct {
 	service    ports.AuthService
 	middleware middleware.AuthMiddleware
+	validator  adapter.Validator
 }
 
 func NewAuthHandler() *authHandler {
 	var handler = new(authHandler)
+
+	// validator
+	validator := adapter.Adapters.Validator
 
 	// redis
 	redisRepository := redisRepository.NewRedisRepository(adapter.Adapters.MultifinanceRedis)
@@ -50,6 +54,7 @@ func NewAuthHandler() *authHandler {
 	// handler
 	handler.service = authService
 	handler.middleware = *middlewareHandler
+	handler.validator = validator
 
 	return handler
 }
@@ -63,9 +68,8 @@ func (h *authHandler) AuthRoute(router fiber.Router) {
 
 func (h *authHandler) register(c *fiber.Ctx) error {
 	var (
-		req        = new(dto.RegisterRequest)
-		ctx        = c.Context()
-		validators = adapter.Adapters.Validator
+		req = new(dto.RegisterRequest)
+		ctx = c.Context()
 	)
 
 	if err := c.BodyParser(req); err != nil {
@@ -73,10 +77,9 @@ func (h *authHandler) register(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(response.Error(err))
 	}
 
-	if err := validators.Validate(req); err != nil {
+	if err := h.validator.Validate(req); err != nil {
 		log.Warn().Err(err).Msg("handler::register - Invalid request body")
-		code, errs := err_msg.Errors(err, req)
-		return c.Status(code).JSON(response.Error(errs))
+		return c.Status(fiber.StatusBadRequest).JSON(response.Error(err))
 	}
 
 	res, err := h.service.Register(ctx, req)
@@ -91,9 +94,8 @@ func (h *authHandler) register(c *fiber.Ctx) error {
 
 func (h *authHandler) login(c *fiber.Ctx) error {
 	var (
-		req        = new(dto.LoginRequest)
-		ctx        = c.Context()
-		validators = adapter.Adapters.Validator
+		req = new(dto.LoginRequest)
+		ctx = c.Context()
 	)
 
 	if err := c.BodyParser(req); err != nil {
@@ -101,10 +103,9 @@ func (h *authHandler) login(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(response.Error(err))
 	}
 
-	if err := validators.Validate(req); err != nil {
+	if err := h.validator.Validate(req); err != nil {
 		log.Warn().Err(err).Msg("handler::login - Invalid request body")
-		code, errs := err_msg.Errors(err, req)
-		return c.Status(code).JSON(response.Error(errs))
+		return c.Status(fiber.StatusBadRequest).JSON(response.Error(err))
 	}
 
 	res, err := h.service.Login(ctx, req)

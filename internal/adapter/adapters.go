@@ -16,6 +16,7 @@ var (
 
 type Option func(adapter *Adapter)
 
+//go:generate mockgen -source=adapters.go -destination=service_validator_mock_test.go -package=adapter
 type Validator interface {
 	Validate(i any) error
 }
