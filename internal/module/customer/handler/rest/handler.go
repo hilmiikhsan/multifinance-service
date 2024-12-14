@@ -1,7 +1,10 @@
 package rest
 
 import (
+	"strings"
+
 	"github.com/gofiber/fiber/v2"
+	"github.com/hilmiikhsan/multifinance-service/constants"
 	"github.com/hilmiikhsan/multifinance-service/internal/adapter"
 	redisRepository "github.com/hilmiikhsan/multifinance-service/internal/infrastructure/redis"
 	"github.com/hilmiikhsan/multifinance-service/internal/middleware"
@@ -59,6 +62,11 @@ func (h *customerHandler) getCustomerProfile(c *fiber.Ctx) error {
 
 	res, err := h.service.GetCustomerProfile(ctx, locals.GetCustomerID())
 	if err != nil {
+		if strings.Contains(err.Error(), constants.ErrUserNotFound) {
+			log.Error().Err(err).Msg("handler::getCustomerProfile - Customer not found")
+			return c.Status(fiber.StatusNotFound).JSON(response.Error(constants.ErrUserNotFound))
+		}
+
 		log.Error().Err(err).Any("response", res).Msg("handler::getCustomerProfile - Failed to logout user")
 		code, errs := err_msg.Errors[error](err)
 		return c.Status(code).JSON(response.Error(errs))

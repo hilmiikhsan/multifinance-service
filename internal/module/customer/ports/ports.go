@@ -15,6 +15,7 @@ type CustomerRepository interface {
 	FindCustomerByID(ctx context.Context, id int) (*entity.Customer, error)
 }
 
+//go:generate mockgen -source=ports.go -destination=../handler/rest/handler_mock_test.go -package=rest
 type CustomerService interface {
 	GetCustomerProfile(ctx context.Context, id int) (*dto.GetCustomerProfileResponse, error)
 }

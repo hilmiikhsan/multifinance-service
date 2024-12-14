@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	"github.com/hilmiikhsan/multifinance-service/constants"
 	"github.com/hilmiikhsan/multifinance-service/internal/module/credit_limit/dto"
 	creditLimitEntity "github.com/hilmiikhsan/multifinance-service/internal/module/credit_limit/entity"
 	customerDto "github.com/hilmiikhsan/multifinance-service/internal/module/customer/dto"
 	"github.com/hilmiikhsan/multifinance-service/internal/module/customer/entity"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func Test_customerService_GetCustomerProfile(t *testing.T) {
