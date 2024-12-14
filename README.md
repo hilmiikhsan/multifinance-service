@@ -30,6 +30,7 @@ A robust and scalable microfinance management system built with **Golang**, **Fi
 ## 📋 System Overview
 
 Multifinance Service is designed to support:
+
 - Flexible loan limits (1, 2, 3, 6 months)
 - Transactions across e-commerce, web, and partner dealers
 - Comprehensive customer and transaction tracking
@@ -46,162 +47,282 @@ Multifinance Service is designed to support:
 
 ### Prerequisites
 
-- Golang 1.22+
-- MySQL
-- Redis
-- Docker (optional)
+- Install [Golang](https://golang.org/dl/)
+- MySQL [MYSQL](https://dev.mysql.com/downloads/installer/)
+- Redis Install [Redis](https://redis.io/download)
+- Docker Install [Docker](https://docs.docker.com/engine/install/)
 
 ---
 
 ### 🐳 Docker Deployment
 
 1. **Pull Docker Image**:
-```bash
-docker pull ikhsanhilmi/multifinance-app-service:latest
 
-Run Container:
+   ```bash
+   docker pull ikhsanhilmi/multifinance-app-service:latest
+   ```
 
-bashCopydocker run -d \
-  --name multifinance-service \
-  -p 8080:8080 \
-  -e MYSQL_URL=mysql://user:password@host:port/database \
-  -e REDIS_URL=redis://host:port \
-  -e JWT_SECRET=your_secret_key \
-  -e APP_ENV=production \
-  ikhsanhilmi/multifinance-app-service:latest
+2. **Run Container**:
 
-Environment Variables:
+   ```bash
+   docker run -d \
+     --name multifinance-service \
+     -p 8080:8080 \
+     -e MYSQL_URL=mysql://user:password@host:port/database \
+     -e REDIS_URL=redis://host:port \
+     -e JWT_SECRET=your_secret_key \
+     -e APP_ENV=production \
+     ikhsanhilmi/multifinance-app-service:latest
+   ```
 
-MYSQL_URL: MySQL connection string
-REDIS_URL: Redis connection URL
-JWT_SECRET: Secret key for JWT token generation
-APP_ENV: Application environment (development/production)
+### Environment Variables
 
+- **MYSQL_URL**: MySQL connection string
+- **REDIS_URL**: Redis connection URL
+- **JWT_SECRET**: Secret key for JWT token generation
+- **APP_ENV**: Application environment (development/production)
 
+---
 
+### 🔧 Local Development Setup
 
-🔧 Local Development Setup
-Clone the Repository
-bashCopygit clone https://github.com/yourusername/multifinance-service.git
-cd multifinance-service
-Install Dependencies
-bashCopygo mod tidy
-Configure Environment
+1. **Clone the Repository**:
 
-Copy .env.example to .env
-Fill in the required configuration values
+   ```bash
+   git clone https://github.com/yourusername/multifinance-service.git
+   cd multifinance-service
+   ```
 
-Database Migrations
-bashCopy# Create new migration
-make migrate-create name=create_transactions_table
+2. **Install Dependencies**:
 
-# Apply migrations
-make migrate-up
+   ```bash
+   go mod tidy
+   ```
 
-# Rollback migrations
-make migrate-down
-Running the Application
-bashCopy# Run in development mode
-make dev
+3. **Configure Environment**:
 
-# Build for production
-make build
+   - Copy `.env.example` to `.env`
+   - Fill in the required configuration values
 
-# Run production binary
-./bin/multifinance-service
+4. **Database Migrations**:
 
-🧪 Testing
-bashCopy# Run unit tests
-make test
+   ```bash
+   Manage database migrations using `goose`:
 
-# Run tests with coverage
-make test-coverage
+- Create a new migration:
+    ```bash
+    make goose-create name=create_users_table
+    ```
+- Apply migrations:
+    ```bash
+    make goose-up
+    ```
+- Rollback migrations:
+    ```bash
+    make goose-down
+    ```
+- Check migration status:
+    ```bash
+    make goose-status
+    ```
+    
+For more details on `goose`, visit the [official documentation](https://github.com/pressly/goose).
+   ```
 
-# Run specific package tests
-make test package=./internal/module/transaction
+5. **Running the Application**:
 
-🔒 Security Features
+   ```bash
+   # Run in development mode
+   make run
+   ```
 
-OWASP Top 10 Protection Mechanisms
+---
 
-SQL Injection Prevention
-Cross-Site Scripting (XSS) Protection
-JWT Token Validation
+## Development
 
+### Developer Guide
 
-Input Validation
-Rate Limiting
-Secure Configuration Management
+#### General Rules
 
+- We use conventional commits: <https://www.conventionalcommits.org>
+  - `feat: commit message` - For new features.
+  - `refactor: commit message` - For code refactoring.
+  - `fix: commit message` - For bug fixes.
+  - `test: commit message` - For tests.
+  - `docs: commit message` - For documentation updates.
+  - `style: commit message` - For code style changes.
 
-📦 Database Schema
-Customers Table
+- Use `git-chglog` to generate changelogs before merging to the release branch:  
+  <https://github.com/git-chglog/git-chglog>
 
-id: Primary Key
-nik: Unique National ID
-full_name: Customer Full Name
-legal_name: Name on Legal Documents
-birth_place: Place of Birth
-birth_date: Date of Birth
-salary: Customer's Monthly Income
-ktp_photo_path: KTP (ID Card) Photo Path
-selfie_photo_path: Selfie Photo Path
+#### Branching Strategy
 
-Transactions Table
+1. Use **feature branches** for all new features and bug fixes.
+2. Merge **feature branches** into the main branch using pull requests.
+3. Keep the main branch up-to-date and high quality.
 
-id: Primary Key
-customer_id: Foreign Key (Customers)
-contract_number: Unique Transaction Contract Number
-on_the_road_price: Total Asset Price
-admin_fee: Administrative Transaction Fee
-installment_amount: Monthly Installment Amount
-interest_amount: Total Interest Amount
-asset_name: Purchased Asset Name
-tenor_months: Loan Tenure in Months
-created_at: Transaction Creation Timestamp
+**Feature Branch Naming Convention:**
 
+- `feature/<feature-name>`: For new features.
+- `bugfix/<bug-description>`: For bug fixes.
+- `hotfix/<fix-description>`: For urgent fixes.
 
-🏗 Architectural Highlights
+#### Folder Structure
 
-Clean Code Architecture
-Modular Design
-Dependency Injection
-Repository Pattern
-Service Layer Abstraction
-Concurrent Transaction Handling
+- `cmd/bin`: Contains `main.go`, which runs the API server or seeds the database.
+- `internal`:
+  - `adapter`: Holds driving and driven adapters:
+    - **Driving Adapters**: Interfaces for the API handler (e.g., REST, CLI).
+    - **Driven Adapters**: Interfaces for database/repository interactions.
+  - `infrastructure`: Configuration and logger setup.
+  - `module`: Contains the core business logic and entities.
+    - `entity`: Defines data models (DTOs/DAOs).
+    - `repository`: Handles database operations.
+    - `service`: Implements business logic.
+    - `handler`: Manages API request handling.
+  - `route`: Stores route definitions.
+  - `pkg`: Shared utilities or common functions.
+  - `logs`: Stores application log files.
 
+---
 
-🤝 Contributing
+## How to Create a New Module
 
-Fork the repository
-Create a feature branch (git checkout -b feature/AmazingFeature)
-Commit changes (git commit -m 'Add some AmazingFeature')
-Push to branch (git push origin feature/AmazingFeature)
-Open a Pull Request
+1. Copy the `internal/module/z_template` folder and rename it to the new module name.
+2. Update the following subfolders within the module:
+   - `entity`: Define the data models (DTO/DAO).
+   - `ports`: Define interfaces for the module.
+   - `repository`: Implement database interactions.
+   - `service`: Implement business logic.
+   - `handler`: Implement API handlers.
+3. Update route definitions in the `route` folder.
 
-Contribution Guidelines
+---
 
-Follow Go coding standards
-Write unit tests for new features
-Update documentation
-Ensure CI/CD checks pass
+### Development Workflow
 
+1. Read the requirements and define entities in the `entity` folder.
+2. Define contracts (interfaces) in the `ports` folder.
+3. Implement repository and service layers.
+4. Create and integrate API handlers.
+5. Test the feature thoroughly.
 
-📄 License
-Distributed under the MIT License. See LICENSE for more information.
+---
 
-📞 Contact
-Hilmi Ikhsan
+### 🧪 Testing
 
-Email: [your-email@example.com]
-LinkedIn: [Your LinkedIn Profile]
-Project Link: https://github.com/yourusername/multifinance-service
+1. **Run Unit Tests**:
 
+   ```bash
+   make test
+   ```
 
-🙏 Acknowledgements
+---
 
-Golang Community
-Fiber Framework
-MySQL
-Redis
-GoMock for Testing
+## 🔒 Security Features
+
+### OWASP Top 10 Protection Mechanisms
+
+- **SQL Injection Prevention**
+- **Cross-Site Scripting (XSS) Protection**
+- **JWT Token Validation**
+- **Input Validation**
+- **Rate Limiting**
+- **Secure Configuration Management**
+
+---
+
+## 📦 Database Schema
+
+### Customers Table
+
+- **id**: Primary Key
+- **nik**: Unique National ID
+- **full_name**: Customer Full Name
+- **legal_name**: Name on Legal Documents
+- **birth_place**: Place of Birth
+- **birth_date**: Date of Birth
+- **salary**: Customer's Monthly Income
+- **ktp_photo_path**: KTP (ID Card) Photo Path
+- **selfie_photo_path**: Selfie Photo Path
+
+### Transactions Table
+
+- **id**: Primary Key
+- **customer_id**: Foreign Key (Customers)
+- **contract_number**: Unique Transaction Contract Number
+- **on_the_road_price**: Total Asset Price
+- **admin_fee**: Administrative Transaction Fee
+- **installment_amount**: Monthly Installment Amount
+- **interest_amount**: Total Interest Amount
+- **asset_name**: Purchased Asset Name
+- **tenor_months**: Loan Tenure in Months
+- **created_at**: Transaction Creation Timestamp
+
+---
+
+## 🏗 Architectural Highlights
+
+- **Clean Code Architecture**
+- **Modular Design**
+- **Dependency Injection**
+- **Repository Pattern**
+- **Service Layer Abstraction**
+- **Concurrent Transaction Handling**
+
+---
+
+## 🤝 Contributing
+
+1. **Fork the Repository**
+2. **Create a Feature Branch**:
+
+   ```bash
+   git checkout -b feature/AmazingFeature
+   ```
+
+3. **Commit Changes**:
+
+   ```bash
+   git commit -m 'Add some AmazingFeature'
+   ```
+
+4. **Push to Branch**:
+
+   ```bash
+   git push origin feature/AmazingFeature
+   ```
+
+5. **Open a Pull Request**
+
+### Contribution Guidelines
+
+- Follow Go coding standards
+- Write unit tests for new features
+- Update documentation
+- Ensure CI/CD checks pass
+
+---
+
+## 📄 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+---
+
+## 📞 Contact
+
+- **Hilmi Ikhsan**
+  - **Email**: [your-email@example.com]
+  - **LinkedIn**: [Your LinkedIn Profile]
+  - **Project Link**: [https://github.com/yourusername/multifinance-service](https://github.com/yourusername/multifinance-service)
+
+---
+
+## 🙏 Acknowledgements
+
+- Golang Community
+- Fiber Framework
+- MySQL
+- Redis
+- GoMock for Testing
